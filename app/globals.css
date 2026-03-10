@@ -21,7 +21,7 @@ body {
 
 @keyframes pulse-dot {
   0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.2); }
+  50% { transform: scale(1.05); }
 }
 
 @keyframes flash-green {
