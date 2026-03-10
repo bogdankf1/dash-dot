@@ -54,7 +54,7 @@ export default function BottomNav() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-1 flex-col items-center gap-1 py-3 text-xs transition-colors ${
+              className={`flex flex-1 flex-col items-center gap-1 py-4 text-xs transition-colors ${
                 isActive
                   ? 'text-[var(--primary)]'
                   : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'

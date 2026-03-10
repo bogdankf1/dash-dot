@@ -169,7 +169,7 @@ export default function ExerciseCard({
             Tap the Morse code for:
           </p>
           <div
-            className="text-5xl font-bold"
+            className="text-4xl font-bold sm:text-5xl"
             style={{ color: 'var(--text-primary)' }}
           >
             {exercise.symbol}
@@ -191,7 +191,7 @@ export default function ExerciseCard({
             Tap the Morse code for:
           </p>
           <div
-            className="text-5xl font-bold"
+            className="text-4xl font-bold sm:text-5xl"
             style={{ color: 'var(--text-primary)' }}
           >
             {exercise.symbol}
@@ -229,7 +229,7 @@ export default function ExerciseCard({
                 type="button"
                 onClick={() => handleIdentifyChoice(option)}
                 disabled={inputDisabled}
-                className="h-16 rounded-xl text-2xl font-bold transition-colors cursor-pointer disabled:opacity-50"
+                className="h-20 sm:h-16 rounded-xl text-2xl font-bold transition-colors cursor-pointer disabled:opacity-50"
                 style={{
                   backgroundColor: 'var(--surface)',
                   border: '2px solid var(--border)',
@@ -530,7 +530,7 @@ function WordSpellExercise({
       <p className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>
         Read the Morse patterns and type the word:
       </p>
-      <div className="flex items-center gap-4 flex-wrap justify-center">
+      <div className="flex items-center gap-2 sm:gap-4 flex-wrap justify-center">
         {letters.map((letter, i) => {
           const pattern = MORSE_MAP[letter] || '';
           return (

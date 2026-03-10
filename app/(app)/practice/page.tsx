@@ -171,7 +171,7 @@ export default function PracticePage() {
               {allLetters.every((l) => selectedSymbols.has(l)) ? 'Deselect All' : 'Select All'}
             </button>
           </div>
-          <div className="grid grid-cols-7 gap-1.5">
+          <div className="grid grid-cols-5 gap-2 sm:grid-cols-7">
             {allLetters.map((letter) => {
               const progress = letterProgress.find((lp) => lp.symbol === letter);
               const mastery = progress?.mastery_level || 0;
@@ -197,7 +197,7 @@ export default function PracticePage() {
           </div>
 
           <h3 className="mb-2 mt-4 text-sm font-semibold text-[var(--text-primary)]">Numbers</h3>
-          <div className="grid grid-cols-7 gap-1.5">
+          <div className="grid grid-cols-5 gap-2 sm:grid-cols-7">
             {allNumbers.map((num) => {
               const selected = selectedSymbols.has(num);
               return (
@@ -259,7 +259,7 @@ export default function PracticePage() {
             {/* Show letter for tap mode */}
             {mode === 'tap' && (
               <div className="mb-8 text-center">
-                <div className="text-6xl font-bold text-[var(--text-primary)]">
+                <div className="text-5xl font-bold text-[var(--text-primary)] sm:text-6xl">
                   {currentSymbol}
                 </div>
                 <p className="mt-2 text-sm text-[var(--text-muted)]">

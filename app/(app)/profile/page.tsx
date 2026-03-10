@@ -154,7 +154,7 @@ export default function ProfilePage() {
         <h3 className="mb-3 text-sm font-semibold text-[var(--text-primary)]">
           Badges
         </h3>
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
           {BADGES.map((badge) => {
             const earned = earnedBadges.includes(badge);
             return (
@@ -165,7 +165,7 @@ export default function ProfilePage() {
                 }`}
               >
                 <span className="text-2xl">{badge.icon}</span>
-                <span className="text-[10px] leading-tight text-[var(--text-muted)]">
+                <span className="text-xs leading-tight text-[var(--text-muted)]">
                   {badge.label}
                 </span>
               </div>

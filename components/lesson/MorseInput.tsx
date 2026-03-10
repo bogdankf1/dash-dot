@@ -77,7 +77,7 @@ export default function MorseInput({
       {showSingle && (
         <div
           {...wrappedTapAreaProps}
-          className={`w-full h-32 rounded-2xl flex items-center justify-center cursor-pointer select-none ${pulsing ? 'animate-pulse-dot' : ''}`}
+          className={`w-full h-36 sm:h-32 rounded-2xl flex items-center justify-center cursor-pointer select-none ${pulsing ? 'animate-pulse-dot' : ''}`}
           style={{
             backgroundColor: 'var(--surface)',
             border: '2px dashed var(--border)',
