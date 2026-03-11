@@ -58,7 +58,7 @@ export default function ChapterCard({ chapter, completion, onClick }: ChapterCar
     <button
       type="button"
       onClick={onClick}
-      className={`flex w-full items-center gap-4 rounded-xl border ${borderColor} bg-[var(--surface)] p-4 text-left shadow-sm transition-shadow hover:shadow-md`}
+      className={`flex w-full items-center gap-4 rounded-xl border ${borderColor} bg-[var(--surface)] p-4 text-left shadow-sm cursor-pointer transition-all hover:shadow-md active:scale-[0.98]`}
     >
       <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full ${accentBg}`}>
         {isComplete ? (

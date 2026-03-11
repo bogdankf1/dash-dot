@@ -90,9 +90,8 @@ export default function PracticePage() {
         total: prev.total + 1,
       }));
       setPracticePattern('');
-      timerRef.current = setTimeout(() => pickRandom(), 1000);
     },
-    [currentSymbol, practicePattern, pickRandom]
+    [currentSymbol, practicePattern]
   );
 
   const handleIdentifyAnswer = useCallback(
@@ -131,8 +130,8 @@ export default function PracticePage() {
   if (loading) {
     return (
       <div className="space-y-4">
-        <div className="h-8 animate-pulse rounded bg-[var(--border)]" />
-        <div className="h-40 animate-pulse rounded-xl bg-[var(--border)]" />
+        <div className="h-8 animate-pulse rounded bg-(--border)" />
+        <div className="h-40 animate-pulse rounded-xl bg-(--border)" />
       </div>
     );
   }
@@ -140,11 +139,11 @@ export default function PracticePage() {
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
-        <p className="mb-4 text-[var(--text-muted)]">Something went wrong loading practice data.</p>
+        <p className="mb-4 text-(--text-muted)">Something went wrong loading practice data.</p>
         <button
           type="button"
           onClick={loadProgress}
-          className="rounded-xl bg-[var(--primary)] px-6 py-3 font-medium text-white transition-colors hover:bg-[var(--primary-hover)]"
+          className="rounded-xl bg-(--primary) px-6 py-3 font-medium text-white transition-colors hover:bg-(--primary-hover)"
         >
           Try Again
         </button>
@@ -159,16 +158,16 @@ export default function PracticePage() {
   if (!isActive) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-[var(--text-primary)]">
+        <h1 className="text-2xl font-bold text-(--text-primary)">
           Free Practice
         </h1>
-        <p className="text-sm text-[var(--text-muted)]">
+        <p className="text-sm text-(--text-muted)">
           Select letters to drill. No lives, no XP — just practice.
         </p>
 
         {/* Mode selector */}
         <div>
-          <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">Mode</p>
+          <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-(--text-muted)">Mode</p>
           <div className="flex gap-2">
             {[
               { value: 'tap' as PracticeMode, label: 'Tap' },
@@ -180,8 +179,8 @@ export default function PracticePage() {
                 onClick={() => setMode(m.value)}
                 className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                   mode === m.value
-                    ? 'bg-[var(--primary)] text-white'
-                    : 'bg-[var(--surface)] text-[var(--text-muted)] ring-1 ring-[var(--border)]'
+                    ? 'bg-(--primary) text-white'
+                    : 'bg-(--surface) text-(--text-muted) ring-1 ring-(--border)'
                 }`}
               >
                 {m.label}
@@ -192,7 +191,7 @@ export default function PracticePage() {
 
         {/* Category tabs */}
         <div>
-          <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">Category</p>
+          <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-(--text-muted)">Category</p>
           <div className="flex gap-2">
             {([
               { value: 'letters' as SymbolCategory, label: 'Letters' },
@@ -204,8 +203,8 @@ export default function PracticePage() {
                 onClick={() => setCategory(c.value)}
                 className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                   category === c.value
-                    ? 'text-[var(--primary)] ring-2 ring-[var(--primary)] bg-transparent'
-                    : 'bg-[var(--surface)] text-[var(--text-muted)] ring-1 ring-[var(--border)]'
+                    ? 'text-(--primary) ring-2 ring-(--primary) bg-transparent'
+                    : 'bg-(--surface) text-(--text-muted) ring-1 ring-(--border)'
                 }`}
               >
                 {c.label}
@@ -215,14 +214,14 @@ export default function PracticePage() {
         </div>
 
         {/* Symbol selector */}
-        <div className="rounded-xl bg-[var(--surface)] p-4 ring-1 ring-[var(--border)]">
+        <div className="rounded-xl bg-(--surface) p-4 ring-1 ring-(--border)">
           {(() => {
             const symbols = category === 'letters' ? allLetters : category === 'numbers' ? allNumbers : allPunctuation;
             const allSelected = symbols.every((s) => selectedSymbols.has(s));
             return (
               <>
                 <div className="mb-2 flex items-center justify-between">
-                  <h3 className="text-sm font-semibold text-[var(--text-primary)]">
+                  <h3 className="text-sm font-semibold text-(--text-primary)">
                     {category === 'letters' ? 'Letters' : category === 'numbers' ? 'Numbers' : 'Punctuation'}
                   </h3>
                   <button
@@ -241,7 +240,7 @@ export default function PracticePage() {
                         });
                       }
                     }}
-                    className="text-xs font-medium text-[var(--primary)]"
+                    className="text-xs font-medium text-(--primary)"
                   >
                     {allSelected ? 'Deselect All' : 'Select All'}
                   </button>
@@ -278,7 +277,7 @@ export default function PracticePage() {
         <button
           onClick={startPractice}
           disabled={selectedSymbols.size < minSymbols}
-          className="w-full rounded-xl bg-[var(--primary)] px-6 py-4 font-medium text-white transition-colors hover:bg-[var(--primary-hover)] disabled:opacity-50"
+          className="w-full rounded-xl bg-(--primary) px-6 py-4 font-medium text-white transition-colors hover:bg-(--primary-hover) disabled:opacity-50"
         >
           Start Practice ({(() => {
             const currentSymbols = category === 'letters' ? allLetters : category === 'numbers' ? allNumbers : allPunctuation;
@@ -299,111 +298,197 @@ export default function PracticePage() {
     : [];
 
   return (
-    <div className="flex min-h-[70vh] flex-col">
-      {/* Stats bar */}
-      <div className="mb-6 flex items-center justify-between">
-        <button
-          onClick={() => setIsActive(false)}
-          className="text-sm font-medium text-[var(--text-muted)]"
-        >
-          ← End Practice
-        </button>
-        <div className="text-sm text-[var(--text-muted)]">
-          {stats.correct}/{stats.total} correct
+    <div className="fixed inset-0 z-[60] flex flex-col overflow-hidden bg-(--background)">
+      {/* Top bar — matches lesson layout */}
+      <div className="shrink-0 px-4 pt-4">
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setIsActive(false)}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-(--text-muted) transition-colors hover:bg-(--surface) hover:text-(--text-primary)"
+            title="End practice"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+          <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--border)' }}>
+            <div
+              className="h-full rounded-full transition-all duration-500 ease-out"
+              style={{
+                width: stats.total > 0 ? `${(stats.correct / stats.total) * 100}%` : '0%',
+                backgroundColor: 'var(--primary)',
+              }}
+            />
+          </div>
+          <div className="shrink-0 text-sm font-medium text-(--text-muted)">
+            {stats.correct}/{stats.total}
+          </div>
         </div>
       </div>
 
-      <div className="flex flex-1 flex-col items-center justify-center">
+      {/* Content area */}
+      <div className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto px-4 py-4">
         {currentSymbol && (
-          <>
-            {/* Show letter for tap mode */}
-            {mode === 'tap' && (
-              <div className="mb-8 text-center">
-                <div className="text-5xl font-bold text-[var(--text-primary)] sm:text-6xl">
-                  {currentSymbol}
-                </div>
-                <p className="mt-2 text-sm text-[var(--text-muted)]">
-                  Tap the morse code for this letter
-                </p>
-              </div>
-            )}
-
-            {/* Show pattern for listen mode */}
-            {mode === 'listen' && (
-              <div className="mb-8 text-center">
-                <button
-                  onClick={() => playMorse(MORSE_MAP[currentSymbol])}
-                  className="mb-4 rounded-full bg-[var(--primary)] p-6 text-white transition-transform active:scale-95"
-                >
-                  <svg className="h-8 w-8" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M8 5v14l11-7z" />
-                  </svg>
-                </button>
-                <p className="text-sm text-[var(--text-muted)]">
-                  Listen and tap the pattern
-                </p>
-              </div>
-            )}
-
-            {/* Identify mode: show pattern, pick the letter */}
-            {mode === 'identify' && (
-              <div className="mb-8 text-center">
-                <MorseDisplay pattern={MORSE_MAP[currentSymbol]} size="lg" />
-                <p className="mt-4 text-lg font-mono text-[var(--text-muted)]">
-                  {MORSE_MAP[currentSymbol]}
-                </p>
-                <p className="mt-2 text-sm text-[var(--text-muted)]">
-                  Which letter is this?
-                </p>
-              </div>
-            )}
-
+          <div className="w-full max-w-lg mx-auto rounded-2xl p-6" style={{ backgroundColor: 'var(--surface)' }}>
             {/* Feedback */}
             {feedback && (
-              <div
-                className={`mb-4 rounded-lg px-6 py-2 text-sm font-medium ${
-                  feedback === 'correct'
-                    ? 'bg-green-100 text-green-700'
-                    : 'bg-red-100 text-red-700'
-                }`}
-              >
-                {feedback === 'correct' ? 'Correct!' : `Wrong — it was ${MORSE_MAP[currentSymbol]}`}
+              <div className="mb-4 text-center">
+                {feedback === 'correct' && (
+                  <p className="text-lg font-bold" style={{ color: 'var(--success)' }}>
+                    Correct!
+                  </p>
+                )}
+                {feedback === 'wrong' && (
+                  <div className="space-y-2">
+                    <p className="text-lg font-bold" style={{ color: 'var(--error)' }}>
+                      The answer was:
+                    </p>
+                    <p className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+                      {currentSymbol} = {MORSE_MAP[currentSymbol]?.split('').map((c) => (c === '.' ? '\u00B7' : '\u2014')).join(' ')}
+                    </p>
+                  </div>
+                )}
               </div>
             )}
 
-            {/* Input area */}
-            {(mode === 'tap' || mode === 'listen') && !feedback && (
-              <div className="w-full max-w-sm flex flex-col items-center gap-4">
-                <MorseInput onChange={setPracticePattern} />
-                <button
-                  type="button"
-                  onClick={handleTapCheck}
-                  disabled={!practicePattern}
-                  className="w-full max-w-xs h-12 rounded-xl font-semibold text-white transition-colors cursor-pointer disabled:opacity-40"
-                  style={{ backgroundColor: 'var(--primary)' }}
-                >
-                  Check
-                </button>
+            {/* Tap mode */}
+            {mode === 'tap' && (
+              <div className="flex flex-col items-center gap-6">
+                <p className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>
+                  Tap the Morse code for:
+                </p>
+                <div className="text-4xl font-bold sm:text-5xl" style={{ color: 'var(--text-primary)' }}>
+                  {currentSymbol}
+                </div>
+                {!feedback && <MorseInput onChange={setPracticePattern} />}
               </div>
             )}
 
-            {mode === 'identify' && (
-              <div className="grid w-full max-w-sm grid-cols-2 gap-3">
-                {options.map((symbol) => (
+            {/* Listen mode */}
+            {mode === 'listen' && (
+              <div className="flex flex-col items-center gap-6">
+                <p className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>
+                  Listen and tap the pattern:
+                </p>
+                <div className="flex items-center gap-3">
                   <button
-                    key={symbol}
-                    onClick={() => handleIdentifyAnswer(symbol)}
-                    disabled={!!feedback}
-                    className="rounded-xl bg-[var(--surface)] px-6 py-4 text-2xl font-bold text-[var(--text-primary)] ring-1 ring-[var(--border)] transition-all hover:ring-[var(--primary)] active:scale-95 disabled:opacity-50"
+                    type="button"
+                    onClick={() => playMorse(MORSE_MAP[currentSymbol])}
+                    className="flex h-12 w-12 items-center justify-center rounded-full transition-colors cursor-pointer active:scale-95"
+                    style={{ backgroundColor: 'var(--primary)', color: '#FFFFFF' }}
+                    title="Play"
                   >
-                    {symbol}
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0014 8.5v7a4.49 4.49 0 002.5-3.5zM14 3.23v2.06a6.51 6.51 0 010 13.42v2.06A8.51 8.51 0 0014 3.23z" />
+                    </svg>
                   </button>
-                ))}
+                  <button
+                    type="button"
+                    onClick={() => playMorse(MORSE_MAP[currentSymbol], 0.5)}
+                    className="flex h-12 items-center gap-1 px-3 rounded-full transition-colors cursor-pointer active:scale-95"
+                    style={{ backgroundColor: 'var(--surface)', border: '2px solid var(--border)', color: 'var(--text-muted)' }}
+                    title="Play slow"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M3 9v6h4l5 5V4L7 9H3z" />
+                    </svg>
+                    <span className="text-xs font-bold">&frac12;</span>
+                  </button>
+                </div>
+                {!feedback && <MorseInput onChange={setPracticePattern} />}
               </div>
             )}
-          </>
+
+            {/* Identify mode */}
+            {mode === 'identify' && (
+              <div className="flex flex-col items-center gap-6">
+                <p className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>
+                  Listen and identify the letter:
+                </p>
+                <MorseDisplay pattern={MORSE_MAP[currentSymbol]} size="lg" />
+                <div className="grid grid-cols-2 gap-3 w-full max-w-xs">
+                  {options.map((symbol) => {
+                    const isCorrectOption = symbol === currentSymbol;
+                    const answered = feedback !== null;
+
+                    let optionBg = 'var(--surface)';
+                    let optionBorder = 'var(--border)';
+                    let optionColor = 'var(--text-primary)';
+
+                    if (answered) {
+                      if (isCorrectOption) {
+                        optionBg = '#dcfce7';
+                        optionBorder = '#4ade80';
+                        optionColor = '#166534';
+                      }
+                    }
+
+                    return (
+                      <button
+                        key={symbol}
+                        type="button"
+                        onClick={() => handleIdentifyAnswer(symbol)}
+                        disabled={!!feedback}
+                        className="h-20 sm:h-16 rounded-xl text-2xl font-bold transition-colors cursor-pointer disabled:opacity-100"
+                        style={{
+                          backgroundColor: optionBg,
+                          border: `2px solid ${optionBorder}`,
+                          color: optionColor,
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!feedback) {
+                            e.currentTarget.style.borderColor = 'var(--primary)';
+                            e.currentTarget.style.color = 'var(--primary)';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!feedback) {
+                            e.currentTarget.style.borderColor = 'var(--border)';
+                            e.currentTarget.style.color = 'var(--text-primary)';
+                          }
+                        }}
+                      >
+                        {symbol}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
         )}
       </div>
+
+      {/* Bottom button bar — matches lesson layout */}
+      {mode !== 'identify' && (
+        <div
+          className="shrink-0 border-t border-(--border) bg-(--background) px-4 py-3"
+          style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
+        >
+          {!feedback ? (
+            <button
+              type="button"
+              onClick={handleTapCheck}
+              disabled={!practicePattern}
+              className="w-full h-14 rounded-xl font-semibold text-white text-lg transition-colors cursor-pointer disabled:opacity-40 active:scale-95"
+              style={{ backgroundColor: 'var(--primary)' }}
+            >
+              Check
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={pickRandom}
+              className="w-full h-14 rounded-xl font-semibold text-white text-lg transition-colors cursor-pointer active:scale-95"
+              style={{ backgroundColor: feedback === 'correct' ? 'var(--success)' : 'var(--primary)' }}
+            >
+              Continue
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

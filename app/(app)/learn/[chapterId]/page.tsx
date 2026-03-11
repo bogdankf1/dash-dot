@@ -171,11 +171,11 @@ export default function ChapterPage() {
                   router.push(`/lesson/${lesson.id}`);
                 }
               }}
-              className={`flex w-full items-center gap-4 rounded-xl border p-4 text-left transition-shadow ${
+              className={`flex w-full items-center gap-4 rounded-xl border p-4 text-left transition-all ${
                 isCompleted
-                  ? 'border-green-200 bg-green-50'
+                  ? 'border-green-200 bg-green-50 cursor-pointer hover:shadow-md active:scale-[0.98]'
                   : isAvailable
-                    ? 'border-[var(--primary)] bg-[var(--surface)] shadow-sm hover:shadow-md'
+                    ? 'border-[var(--primary)] bg-[var(--surface)] shadow-sm cursor-pointer hover:shadow-md active:scale-[0.98]'
                     : 'border-gray-200 bg-gray-50 opacity-60'
               }`}
             >

@@ -35,11 +35,13 @@ export default function LessonPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [skipAudio, setSkipAudio] = useState(false);
+  const [showExitModal, setShowExitModal] = useState(false);
   const [mnemonicGuide, setMnemonicGuide] = useState<MnemonicGuideType>('dashdot');
   const [lessonMeta, setLessonMeta] = useState<{
     chapterId: string;
     newSymbols: string[];
     isWordLesson?: boolean;
+    hasMoreLessons: boolean;
   } | null>(null);
 
   // Track per-symbol results
@@ -69,15 +71,17 @@ export default function LessonPage() {
       const guide = (profile?.selected_guide || 'google') as GuideType;
       const chapters = getChapters(guide);
 
-      const { data: progressData } = await supabase
-        .from('letter_progress')
-        .select('*')
-        .eq('user_id', user.id);
+      const [{ data: progressData }, { data: historyData }] = await Promise.all([
+        supabase.from('letter_progress').select('*').eq('user_id', user.id),
+        supabase.from('lesson_history').select('lesson_id').eq('user_id', user.id),
+      ]);
 
       const letterProgress: LetterProgress[] = progressData || [];
+      const completedLessonIds = new Set((historyData || []).map((h: { lesson_id: string }) => h.lesson_id));
 
       // Find the lesson config
       let foundLesson = null;
+      let chapterLessons: { id: string }[] = [];
       for (const chapter of chapters) {
         const previousSymbols = chapters
           .filter((c) => c.index < chapter.index)
@@ -86,6 +90,7 @@ export default function LessonPage() {
         const match = lessons.find((l) => l.id === lessonId);
         if (match) {
           foundLesson = match;
+          chapterLessons = lessons;
           break;
         }
       }
@@ -95,10 +100,16 @@ export default function LessonPage() {
         return;
       }
 
+      // Check if there are remaining incomplete lessons in this chapter (excluding current)
+      const hasMoreLessons = chapterLessons.some(
+        (l) => l.id !== lessonId && !completedLessonIds.has(l.id)
+      );
+
       setLessonMeta({
         chapterId: foundLesson.chapterId,
         newSymbols: foundLesson.newSymbols,
         isWordLesson: foundLesson.isWordLesson,
+        hasMoreLessons,
       });
 
       const generatedExercises = foundLesson.isWordLesson
@@ -247,7 +258,10 @@ export default function LessonPage() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <div className="text-[var(--text-muted)]">Loading lesson...</div>
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-[3px] border-[var(--border)] border-t-[var(--primary)]" />
+          <span className="text-sm text-[var(--text-muted)]">Preparing lesson</span>
+        </div>
       </div>
     );
   }
@@ -355,7 +369,9 @@ export default function LessonPage() {
           )}
 
           <button
-            onClick={() => router.push(lessonMeta?.chapterId ? `/learn/${lessonMeta.chapterId}` : '/dashboard')}
+            onClick={() => router.push(
+              lessonMeta?.hasMoreLessons ? `/learn/${lessonMeta.chapterId}` : '/dashboard'
+            )}
             className="w-full rounded-xl bg-[var(--primary)] px-6 py-4 font-medium text-white transition-colors hover:bg-[var(--primary-hover)]"
           >
             Continue
@@ -371,7 +387,7 @@ export default function LessonPage() {
         <div className="flex items-center gap-3">
           <button
             type="button"
-            onClick={() => router.push(lessonMeta?.chapterId ? `/learn/${lessonMeta.chapterId}` : '/dashboard')}
+            onClick={() => setShowExitModal(true)}
             className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg text-[var(--text-muted)] transition-colors hover:bg-[var(--surface)] hover:text-[var(--text-primary)]"
             title="Exit lesson"
           >
@@ -413,6 +429,33 @@ export default function LessonPage() {
           />
         )}
       </div>
+
+      {showExitModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-sm rounded-2xl bg-[var(--background)] p-6 shadow-xl">
+            <h3 className="mb-2 text-lg font-bold text-[var(--text-primary)]">Quit Lesson?</h3>
+            <p className="mb-6 text-sm text-[var(--text-muted)]">
+              Your progress in this lesson won&apos;t be saved and no XP will be earned.
+            </p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowExitModal(false)}
+                className="flex-1 rounded-xl bg-[var(--primary)] px-4 py-3 text-sm font-medium text-white"
+              >
+                Keep Going
+              </button>
+              <button
+                type="button"
+                onClick={() => router.push(lessonMeta?.chapterId ? `/learn/${lessonMeta.chapterId}` : '/dashboard')}
+                className="flex-1 rounded-xl bg-[var(--surface)] px-4 py-3 text-sm font-medium text-[var(--error)] ring-1 ring-[var(--border)]"
+              >
+                Quit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

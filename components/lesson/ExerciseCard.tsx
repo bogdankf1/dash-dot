@@ -422,7 +422,7 @@ export default function ExerciseCard({
 
       {/* Unified bottom button bar */}
       <div
-        className="fixed bottom-0 left-0 right-0 z-50 border-t border-[var(--border)] bg-[var(--background)] px-4 py-3"
+        className="fixed bottom-0 left-0 right-0 z-50 border-t border-(--border) bg-(--background) px-4 py-3"
         style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
       >
         {effectiveButtonState === 'check' && (
@@ -498,7 +498,6 @@ function SpeakerButtons({ onPlay, onPlaySlow }: { onPlay: () => void; onPlaySlow
 function WordListenBody({
   word,
   inputDisabled,
-  showAnswer,
   textInput,
   onTextChange,
   showTranscript,
@@ -525,9 +524,16 @@ function WordListenBody({
       <button
         type="button"
         onClick={onToggleTranscript}
-        className="text-sm font-medium transition-colors"
-        style={{ color: 'var(--text-muted)' }}
+        className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
+        style={{ color: 'var(--text-muted)', border: '1px solid var(--border)' }}
       >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          {showTranscript ? (
+            <><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" /><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" /><line x1="1" y1="1" x2="23" y2="23" /></>
+          ) : (
+            <><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></>
+          )}
+        </svg>
         {showTranscript ? 'Hide Transcript' : 'Show Transcript'}
       </button>
       {showTranscript && (
@@ -535,17 +541,12 @@ function WordListenBody({
           {letters.map((letter, i) => {
             const pattern = MORSE_MAP[letter] || '';
             return (
-              <div key={i} className="flex flex-col items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2">
+              <div key={i} className="flex flex-col items-center justify-center rounded-xl border border-(--border) bg-(--background) px-3 py-2">
                 <MorseDisplay pattern={pattern} size="sm" />
               </div>
             );
           })}
         </div>
-      )}
-      {showAnswer && (
-        <p className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
-          {word}
-        </p>
       )}
       {!inputDisabled && (
         <input
@@ -634,7 +635,6 @@ function WordEncodeBody({
 
 function WordSpellBody({
   word,
-  showAnswer,
   inputDisabled,
   textInput,
   onTextChange,
@@ -656,17 +656,12 @@ function WordSpellBody({
         {letters.map((letter, i) => {
           const pattern = MORSE_MAP[letter] || '';
           return (
-            <div key={i} className="flex flex-col items-center gap-1 rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2">
+            <div key={i} className="flex flex-col items-center gap-1 rounded-xl border border-(--border) bg-(--background) px-3 py-2">
               <MorseDisplay pattern={pattern} size="sm" />
             </div>
           );
         })}
       </div>
-      {showAnswer && (
-        <p className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
-          {word}
-        </p>
-      )}
       {!inputDisabled && (
         <input
           type="text"
