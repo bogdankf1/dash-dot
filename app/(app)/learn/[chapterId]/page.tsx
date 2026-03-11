@@ -73,7 +73,7 @@ export default function ChapterPage() {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-8">
+      <div>
         <div className="mb-4 h-8 w-48 animate-pulse rounded bg-gray-200" />
         <div className="mb-6 grid grid-cols-6 gap-2">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -105,7 +105,7 @@ export default function ChapterPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8">
+    <div>
       <button
         type="button"
         onClick={() => router.push('/dashboard')}

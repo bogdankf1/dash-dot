@@ -2,13 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
 import type { GuideType } from '@/types';
 
 export default function SettingsPage() {
   const router = useRouter();
   const [guide, setGuide] = useState<GuideType>('google');
   const [audioEnabled, setAudioEnabled] = useState(true);
-  const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [inputMode, setInputMode] = useState<'single' | 'buttons' | 'both'>('both');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -25,7 +25,6 @@ export default function SettingsPage() {
       if (localSettings) {
         const parsed = JSON.parse(localSettings);
         setAudioEnabled(parsed.audioEnabled ?? true);
-        setPlaybackSpeed(parsed.playbackSpeed ?? 1);
         setInputMode(parsed.inputMode ?? 'both');
       }
       setLoading(false);
@@ -43,10 +42,11 @@ export default function SettingsPage() {
       body: JSON.stringify({ selected_guide: guide }),
     });
 
-    // Save local settings
+    // Save local settings (derive mnemonic guide from learning guide)
+    const mnemonicGuide = guide === 'google' ? 'hello-morse' : 'dashdot';
     localStorage.setItem(
       'dashdot-settings',
-      JSON.stringify({ audioEnabled, playbackSpeed, inputMode })
+      JSON.stringify({ audioEnabled, inputMode, mnemonicGuide })
     );
 
     setSaving(false);
@@ -71,7 +71,7 @@ export default function SettingsPage() {
           Learning Guide
         </label>
         <p className="mb-3 text-xs text-[var(--text-muted)]">
-          Determines the order you learn letters
+          Determines the order you learn letters and which mnemonics are used
         </p>
         <select
           value={guide}
@@ -107,27 +107,6 @@ export default function SettingsPage() {
               }`}
             />
           </button>
-        </div>
-      </div>
-
-      {/* Playback Speed */}
-      <div className="rounded-xl bg-[var(--surface)] p-4 ring-1 ring-[var(--border)]">
-        <label className="mb-2 block text-sm font-semibold text-[var(--text-primary)]">
-          Playback Speed: {playbackSpeed}x
-        </label>
-        <input
-          type="range"
-          min="0.5"
-          max="2"
-          step="0.25"
-          value={playbackSpeed}
-          onChange={(e) => setPlaybackSpeed(parseFloat(e.target.value))}
-          className="w-full accent-[var(--primary)]"
-        />
-        <div className="mt-1 flex justify-between text-xs text-[var(--text-muted)]">
-          <span>0.5x</span>
-          <span>1x</span>
-          <span>2x</span>
         </div>
       </div>
 
@@ -182,6 +161,18 @@ export default function SettingsPage() {
         className="w-full rounded-xl bg-[var(--primary)] px-6 py-3 font-medium text-white transition-colors hover:bg-[var(--primary-hover)] disabled:opacity-50"
       >
         {saving ? 'Saving...' : 'Save Settings'}
+      </button>
+
+      {/* Sign Out */}
+      <button
+        onClick={async () => {
+          const supabase = createClient();
+          await supabase.auth.signOut();
+          router.push('/login');
+        }}
+        className="w-full rounded-xl bg-[var(--surface)] px-6 py-3 text-sm font-medium text-[var(--error)] ring-1 ring-[var(--border)]"
+      >
+        Sign Out
       </button>
     </div>
   );

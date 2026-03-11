@@ -2,12 +2,14 @@
 
 import { useState } from 'react';
 import MorseDisplay from '@/components/lesson/MorseDisplay';
+import MnemonicIllustration from '@/components/lesson/MnemonicIllustration';
 import { playMorse } from '@/lib/morse/audio';
+import { getMnemonics, type MnemonicGuideType } from '@/lib/morse/mnemonics';
 
 interface LetterRevealProps {
   symbol: string;
   pattern: string;
-  onContinue: () => void;
+  mnemonicGuide?: MnemonicGuideType;
 }
 
 function patternToReadable(pattern: string): string {
@@ -20,7 +22,7 @@ function patternToReadable(pattern: string): string {
 export default function LetterReveal({
   symbol,
   pattern,
-  onContinue,
+  mnemonicGuide = 'dashdot',
 }: LetterRevealProps) {
   const [isPlaying, setIsPlaying] = useState(false);
 
@@ -42,6 +44,10 @@ export default function LetterReveal({
       >
         {symbol}
       </div>
+
+      {getMnemonics(mnemonicGuide)[symbol.toUpperCase()] && (
+        <MnemonicIllustration letter={symbol} guide={mnemonicGuide} />
+      )}
 
       <MorseDisplay pattern={pattern} size="lg" animated />
 
@@ -66,20 +72,6 @@ export default function LetterReveal({
         {isPlaying ? 'Playing...' : 'Play Sound'}
       </button>
 
-      <button
-        type="button"
-        onClick={onContinue}
-        className="px-8 py-3 rounded-xl font-semibold text-white transition-colors cursor-pointer"
-        style={{ backgroundColor: 'var(--primary)' }}
-        onMouseEnter={(e) =>
-          (e.currentTarget.style.backgroundColor = 'var(--primary-hover)')
-        }
-        onMouseLeave={(e) =>
-          (e.currentTarget.style.backgroundColor = 'var(--primary)')
-        }
-      >
-        Continue
-      </button>
     </div>
   );
 }

@@ -8,6 +8,7 @@ import MorseDisplay from '@/components/lesson/MorseDisplay';
 import MorseInput from '@/components/lesson/MorseInput';
 
 type PracticeMode = 'tap' | 'listen' | 'identify';
+type SymbolCategory = 'letters' | 'numbers' | 'punctuation';
 
 export default function PracticePage() {
   const [letterProgress, setLetterProgress] = useState<LetterProgress[]>([]);
@@ -16,8 +17,10 @@ export default function PracticePage() {
   const [currentSymbol, setCurrentSymbol] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
   const [mode, setMode] = useState<PracticeMode>('tap');
+  const [category, setCategory] = useState<SymbolCategory>('letters');
   const [stats, setStats] = useState({ correct: 0, total: 0 });
   const [loading, setLoading] = useState(true);
+  const [practicePattern, setPracticePattern] = useState('');
 
   useEffect(() => {
     async function loadProgress() {
@@ -62,18 +65,18 @@ export default function PracticePage() {
     pickRandom();
   };
 
-  const handleTapAnswer = useCallback(
-    (pattern: string) => {
+  const handleTapCheck = useCallback(() => {
       if (!currentSymbol) return;
-      const correct = pattern === MORSE_MAP[currentSymbol];
+      const correct = practicePattern === MORSE_MAP[currentSymbol];
       setFeedback(correct ? 'correct' : 'wrong');
       setStats((prev) => ({
         correct: prev.correct + (correct ? 1 : 0),
         total: prev.total + 1,
       }));
+      setPracticePattern('');
       setTimeout(() => pickRandom(), 1000);
     },
-    [currentSymbol, pickRandom]
+    [currentSymbol, practicePattern, pickRandom]
   );
 
   const handleIdentifyAnswer = useCallback(
@@ -113,6 +116,7 @@ export default function PracticePage() {
 
   const allLetters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
   const allNumbers = '0123456789'.split('');
+  const allPunctuation = ['.', ',', '?', '!', '/', '(', ')', '&', ':', ';', '=', '+', '-', '_', '"', '$', '@'];
 
   if (!isActive) {
     return (
@@ -145,76 +149,86 @@ export default function PracticePage() {
           ))}
         </div>
 
-        {/* Letter selector */}
-        <div className="rounded-xl bg-[var(--surface)] p-4 ring-1 ring-[var(--border)]">
-          <div className="mb-2 flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-[var(--text-primary)]">Letters</h3>
+        {/* Category tabs */}
+        <div className="flex gap-2">
+          {([
+            { value: 'letters' as SymbolCategory, label: 'Letters' },
+            { value: 'numbers' as SymbolCategory, label: 'Numbers' },
+            { value: 'punctuation' as SymbolCategory, label: 'Punctuation' },
+          ]).map((c) => (
             <button
-              onClick={() => {
-                const allSelected = allLetters.every((l) => selectedSymbols.has(l));
-                if (allSelected) {
-                  setSelectedSymbols((prev) => {
-                    const next = new Set(prev);
-                    allLetters.forEach((l) => next.delete(l));
-                    return next;
-                  });
-                } else {
-                  setSelectedSymbols((prev) => {
-                    const next = new Set(prev);
-                    allLetters.forEach((l) => next.add(l));
-                    return next;
-                  });
-                }
-              }}
-              className="text-xs font-medium text-[var(--primary)]"
+              key={c.value}
+              onClick={() => setCategory(c.value)}
+              className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                category === c.value
+                  ? 'bg-[var(--primary)] text-white'
+                  : 'bg-[var(--surface)] text-[var(--text-muted)] ring-1 ring-[var(--border)]'
+              }`}
             >
-              {allLetters.every((l) => selectedSymbols.has(l)) ? 'Deselect All' : 'Select All'}
+              {c.label}
             </button>
-          </div>
-          <div className="grid grid-cols-5 gap-2 sm:grid-cols-7">
-            {allLetters.map((letter) => {
-              const progress = letterProgress.find((lp) => lp.symbol === letter);
-              const mastery = progress?.mastery_level || 0;
-              const selected = selectedSymbols.has(letter);
-              return (
-                <button
-                  key={letter}
-                  onClick={() => toggleSymbol(letter)}
-                  className={`flex aspect-square items-center justify-center rounded-lg text-sm font-bold transition-all ${
-                    selected
-                      ? mastery >= 3
-                        ? 'bg-green-100 text-green-700 ring-2 ring-green-400'
-                        : mastery >= 2
-                          ? 'bg-amber-100 text-amber-700 ring-2 ring-amber-400'
-                          : 'bg-indigo-100 text-indigo-700 ring-2 ring-indigo-400'
-                      : 'bg-gray-100 text-gray-400'
-                  }`}
-                >
-                  {letter}
-                </button>
-              );
-            })}
-          </div>
+          ))}
+        </div>
 
-          <h3 className="mb-2 mt-4 text-sm font-semibold text-[var(--text-primary)]">Numbers</h3>
-          <div className="grid grid-cols-5 gap-2 sm:grid-cols-7">
-            {allNumbers.map((num) => {
-              const selected = selectedSymbols.has(num);
-              return (
-                <button
-                  key={num}
-                  onClick={() => toggleSymbol(num)}
-                  className={`flex aspect-square items-center justify-center rounded-lg text-sm font-bold transition-all ${
-                    selected
-                      ? 'bg-indigo-100 text-indigo-700 ring-2 ring-indigo-400'
-                      : 'bg-gray-100 text-gray-400'
-                  }`}
-                >
-                  {num}
-                </button>
-              );
-            })}
-          </div>
+        {/* Symbol selector */}
+        <div className="rounded-xl bg-[var(--surface)] p-4 ring-1 ring-[var(--border)]">
+          {(() => {
+            const symbols = category === 'letters' ? allLetters : category === 'numbers' ? allNumbers : allPunctuation;
+            const allSelected = symbols.every((s) => selectedSymbols.has(s));
+            return (
+              <>
+                <div className="mb-2 flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-[var(--text-primary)]">
+                    {category === 'letters' ? 'Letters' : category === 'numbers' ? 'Numbers' : 'Punctuation'}
+                  </h3>
+                  <button
+                    onClick={() => {
+                      if (allSelected) {
+                        setSelectedSymbols((prev) => {
+                          const next = new Set(prev);
+                          symbols.forEach((s) => next.delete(s));
+                          return next;
+                        });
+                      } else {
+                        setSelectedSymbols((prev) => {
+                          const next = new Set(prev);
+                          symbols.forEach((s) => next.add(s));
+                          return next;
+                        });
+                      }
+                    }}
+                    className="text-xs font-medium text-[var(--primary)]"
+                  >
+                    {allSelected ? 'Deselect All' : 'Select All'}
+                  </button>
+                </div>
+                <div className="grid grid-cols-5 gap-2 sm:grid-cols-7">
+                  {symbols.map((sym) => {
+                    const progress = letterProgress.find((lp) => lp.symbol === sym);
+                    const mastery = progress?.mastery_level || 0;
+                    const selected = selectedSymbols.has(sym);
+                    return (
+                      <button
+                        key={sym}
+                        onClick={() => toggleSymbol(sym)}
+                        className={`flex aspect-square items-center justify-center rounded-lg text-sm font-bold transition-all ${
+                          selected
+                            ? mastery >= 3
+                              ? 'bg-green-100 text-green-700 ring-2 ring-green-400'
+                              : mastery >= 2
+                                ? 'bg-amber-100 text-amber-700 ring-2 ring-amber-400'
+                                : 'bg-indigo-100 text-indigo-700 ring-2 ring-indigo-400'
+                            : 'bg-gray-100 text-gray-400'
+                        }`}
+                      >
+                        {sym}
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            );
+          })()}
         </div>
 
         <button
@@ -312,9 +326,18 @@ export default function PracticePage() {
             )}
 
             {/* Input area */}
-            {(mode === 'tap' || mode === 'listen') && (
-              <div className="w-full max-w-sm">
-                <MorseInput onComplete={handleTapAnswer} disabled={!!feedback} />
+            {(mode === 'tap' || mode === 'listen') && !feedback && (
+              <div className="w-full max-w-sm flex flex-col items-center gap-4">
+                <MorseInput onChange={setPracticePattern} />
+                <button
+                  type="button"
+                  onClick={handleTapCheck}
+                  disabled={!practicePattern}
+                  className="w-full max-w-xs h-12 rounded-xl font-semibold text-white transition-colors cursor-pointer disabled:opacity-40"
+                  style={{ backgroundColor: 'var(--primary)' }}
+                >
+                  Check
+                </button>
               </div>
             )}
 

@@ -45,6 +45,8 @@ const navItems = [
 export default function BottomNav() {
   const pathname = usePathname();
 
+  if (pathname.startsWith('/lesson/')) return null;
+
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-[var(--border)] bg-[var(--surface)]">
       <div className="mx-auto flex max-w-lg items-center justify-around">

@@ -3,42 +3,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 const HOLD_THRESHOLD = 200;
-const COMPLETION_DELAY = 600;
 
-export function useMorseInput(onComplete: (pattern: string) => void) {
+export function useMorseInput() {
   const [currentPattern, setCurrentPattern] = useState('');
-  const [isBuilding, setIsBuilding] = useState(false);
   const holdStartRef = useRef<number>(0);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const patternRef = useRef('');
-  const onCompleteRef = useRef(onComplete);
-  onCompleteRef.current = onComplete;
 
-  const resetTimeout = useCallback(() => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-    timeoutRef.current = setTimeout(() => {
-      if (patternRef.current) {
-        onCompleteRef.current(patternRef.current);
-        patternRef.current = '';
-        setCurrentPattern('');
-        setIsBuilding(false);
-      }
-    }, COMPLETION_DELAY);
+  const appendSymbol = useCallback((symbol: '.' | '-') => {
+    patternRef.current += symbol;
+    setCurrentPattern(patternRef.current);
   }, []);
 
-  const appendSymbol = useCallback(
-    (symbol: '.' | '-') => {
-      patternRef.current += symbol;
-      setCurrentPattern(patternRef.current);
-      setIsBuilding(true);
-      resetTimeout();
-    },
-    [resetTimeout]
-  );
-
-  // Mode A: single key/tap — hold duration determines dot vs dash
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.code === 'Space' && !e.repeat) {
@@ -66,11 +41,9 @@ export function useMorseInput(onComplete: (pattern: string) => void) {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
   }, [handleKeyDown, handleKeyUp]);
 
-  // Mode A: touch events for tap area
   const tapAreaProps = {
     onTouchStart: (e: React.TouchEvent) => {
       e.preventDefault();
@@ -90,7 +63,6 @@ export function useMorseInput(onComplete: (pattern: string) => void) {
     },
   };
 
-  // Mode B: explicit dot/dash buttons
   const dotButtonProps = {
     onClick: () => appendSymbol('.'),
   };
@@ -102,9 +74,9 @@ export function useMorseInput(onComplete: (pattern: string) => void) {
   const reset = useCallback(() => {
     patternRef.current = '';
     setCurrentPattern('');
-    setIsBuilding(false);
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
   }, []);
+
+  const isBuilding = currentPattern.length > 0;
 
   return {
     currentPattern,

@@ -45,7 +45,7 @@ export default function ProgressPage() {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-8">
+      <div>
         <div className="mb-6 h-8 w-40 animate-pulse rounded bg-gray-200" />
         <div className="mb-8 grid grid-cols-6 gap-2 md:grid-cols-8">
           {Array.from({ length: 36 }).map((_, i) => (
@@ -62,7 +62,7 @@ export default function ProgressPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8">
+    <div>
       <h1 className="mb-6 text-2xl font-bold text-[var(--text-primary)]">Your Progress</h1>
 
       <div className="mb-8">

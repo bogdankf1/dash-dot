@@ -3,13 +3,13 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { MORSE_MAP } from '@/lib/morse/codes';
 import { generateLesson, generateWordLesson, calculateXP, updateMastery } from '@/lib/morse/engine';
 import type { Exercise } from '@/lib/morse/engine';
 import { getChapters, getLessonsForChapter } from '@/lib/morse/chapters';
 import type { LetterProgress, GuideType } from '@/types';
 import ExerciseCard from '@/components/lesson/ExerciseCard';
 import ProgressBar from '@/components/lesson/ProgressBar';
+import type { MnemonicGuideType } from '@/lib/morse/mnemonics';
 
 interface SymbolResult {
   symbol: string;
@@ -32,6 +32,8 @@ export default function LessonPage() {
   const [isGameOver, setIsGameOver] = useState(false);
   const [xpEarned, setXpEarned] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [skipAudio, setSkipAudio] = useState(false);
+  const [mnemonicGuide, setMnemonicGuide] = useState<MnemonicGuideType>('dashdot');
   const [lessonMeta, setLessonMeta] = useState<{
     chapterId: string;
     newSymbols: string[];
@@ -104,6 +106,18 @@ export default function LessonPage() {
           );
 
       setExercises(generatedExercises);
+
+      // Load mnemonic guide preference
+      try {
+        const localSettings = localStorage.getItem('dashdot-settings');
+        if (localSettings) {
+          const parsed = JSON.parse(localSettings);
+          if (parsed.mnemonicGuide === 'hello-morse') {
+            setMnemonicGuide('hello-morse');
+          }
+        }
+      } catch {}
+
       setLoading(false);
     }
 
@@ -154,16 +168,23 @@ export default function LessonPage() {
       });
 
       // Move to next exercise
-      setTimeout(() => {
-        if (currentIndex + 1 >= exercises.length) {
-          setIsComplete(true);
-        } else {
-          setCurrentIndex((prev) => prev + 1);
-        }
-      }, 800);
+      if (currentIndex + 1 >= exercises.length) {
+        setIsComplete(true);
+      } else {
+        setCurrentIndex((prev) => prev + 1);
+      }
     },
     [currentIndex, exercises]
   );
+
+  // Auto-skip audio exercises when skipAudio is enabled
+  useEffect(() => {
+    if (!skipAudio || exercises.length === 0 || isComplete || isGameOver) return;
+    const exercise = exercises[currentIndex];
+    if (exercise && (exercise.type === 'word-listen' || exercise.type === 'identify')) {
+      handleAnswer(true);
+    }
+  }, [skipAudio, currentIndex, exercises, isComplete, isGameOver, handleAnswer]);
 
   // Save results when lesson completes
   useEffect(() => {
@@ -285,7 +306,7 @@ export default function LessonPage() {
           )}
 
           <button
-            onClick={() => router.push('/dashboard')}
+            onClick={() => router.push(lessonMeta?.chapterId ? `/learn/${lessonMeta.chapterId}` : '/dashboard')}
             className="w-full rounded-xl bg-[var(--primary)] px-6 py-4 font-medium text-white transition-colors hover:bg-[var(--primary-hover)]"
           >
             Continue
@@ -313,9 +334,22 @@ export default function LessonPage() {
             exerciseNumber={currentIndex + 1}
             totalExercises={exercises.length}
             onAnswer={handleAnswer}
+            mnemonicGuide={mnemonicGuide}
           />
         )}
       </div>
+
+      {!skipAudio && (
+        <div className="fixed bottom-0 left-0 right-0 flex justify-center border-t border-[var(--border)] bg-[var(--background)] px-4 py-3" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
+          <button
+            type="button"
+            onClick={() => setSkipAudio(true)}
+            className="rounded-xl bg-[var(--surface)] px-5 py-3 text-sm font-medium text-[var(--text-muted)] ring-1 ring-[var(--border)] transition-colors"
+          >
+            Can&apos;t listen now? Skip audio
+          </button>
+        </div>
+      )}
     </div>
   );
 }

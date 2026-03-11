@@ -11,7 +11,7 @@ import type { UserProfile, LetterProgress, LessonHistory, Chapter } from '@/type
 export default function DashboardPage() {
   const router = useRouter();
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [letterProgress, setLetterProgress] = useState<LetterProgress[]>([]);
+  const [_, setLetterProgress] = useState<LetterProgress[]>([]);
   const [lessonHistory, setLessonHistory] = useState<LessonHistory[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -68,7 +68,7 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-8">
+      <div>
         <div className="mb-6 flex items-center justify-between">
           <div className="h-8 w-20 animate-pulse rounded-full bg-gray-200" />
           <div className="h-8 w-24 animate-pulse rounded-full bg-gray-200" />
@@ -84,7 +84,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8">
+    <div>
       <div className="mb-6 flex items-center justify-between">
         <StreakBadge streak={profile?.streak ?? 0} />
         <XPBar xp={profile?.xp ?? 0} />

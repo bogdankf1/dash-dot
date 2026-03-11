@@ -1,33 +1,27 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useMorseInput } from '@/lib/hooks/useMorseInput';
 import MorseDisplay from '@/components/lesson/MorseDisplay';
 
 interface MorseInputProps {
-  onComplete: (pattern: string) => void;
+  onChange: (pattern: string) => void;
   mode?: 'single' | 'buttons' | 'both';
-  disabled?: boolean;
 }
 
 export default function MorseInput({
-  onComplete,
+  onChange,
   mode = 'both',
-  disabled = false,
 }: MorseInputProps) {
   const [pulsing, setPulsing] = useState(false);
 
-  const handleComplete = useCallback(
-    (pattern: string) => {
-      if (!disabled) {
-        onComplete(pattern);
-      }
-    },
-    [onComplete, disabled]
-  );
+  const { currentPattern, isBuilding, tapAreaProps, dotButtonProps, dashButtonProps, reset } =
+    useMorseInput();
 
-  const { currentPattern, isBuilding, tapAreaProps, dotButtonProps, dashButtonProps } =
-    useMorseInput(handleComplete);
+  // Notify parent whenever pattern changes
+  useEffect(() => {
+    onChange(currentPattern);
+  }, [currentPattern, onChange]);
 
   const triggerPulse = () => {
     setPulsing(true);
@@ -36,48 +30,61 @@ export default function MorseInput({
 
   const wrappedTapAreaProps = {
     onTouchStart: (e: React.TouchEvent) => {
-      if (disabled) return;
       triggerPulse();
       tapAreaProps.onTouchStart(e);
     },
     onTouchEnd: (e: React.TouchEvent) => {
-      if (disabled) return;
       tapAreaProps.onTouchEnd(e);
     },
     onMouseDown: () => {
-      if (disabled) return;
       triggerPulse();
       tapAreaProps.onMouseDown();
     },
     onMouseUp: () => {
-      if (disabled) return;
       tapAreaProps.onMouseUp();
     },
+  };
+
+  const handleClear = () => {
+    reset();
+    onChange('');
   };
 
   const showSingle = mode === 'single' || mode === 'both';
   const showButtons = mode === 'buttons' || mode === 'both';
 
   return (
-    <div
-      className={`flex flex-col items-center gap-4 w-full ${disabled ? 'opacity-40 pointer-events-none' : ''}`}
-    >
-      {currentPattern && (
-        <div className="mb-2">
-          <MorseDisplay pattern={currentPattern} size="sm" />
-        </div>
-      )}
+    <div className="flex flex-col items-center gap-4 w-full">
+      <div className="min-h-[3.5rem] flex flex-col items-center justify-center">
+        {currentPattern && (
+          <div className="mb-2 flex items-center gap-2">
+            <MorseDisplay pattern={currentPattern} size="sm" />
+            <button
+              type="button"
+              onClick={handleClear}
+              className="text-xs font-medium px-2 py-1 rounded-lg transition-colors cursor-pointer"
+              style={{
+                color: 'var(--text-muted)',
+                backgroundColor: 'var(--background)',
+                border: '1px solid var(--border)',
+              }}
+            >
+              Clear
+            </button>
+          </div>
+        )}
 
-      {isBuilding && (
-        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-          Listening...
-        </p>
-      )}
+        {isBuilding && (
+          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+            Building...
+          </p>
+        )}
+      </div>
 
       {showSingle && (
         <div
           {...wrappedTapAreaProps}
-          className={`hidden md:flex w-full h-32 rounded-2xl items-center justify-center cursor-pointer select-none ${pulsing ? 'animate-pulse-dot' : ''}`}
+          className={`hidden lg:flex w-full h-32 rounded-2xl items-center justify-center cursor-pointer select-none ${pulsing ? 'animate-pulse-dot' : ''}`}
           style={{
             backgroundColor: 'var(--surface)',
             border: '2px dashed var(--border)',
@@ -97,7 +104,6 @@ export default function MorseInput({
           <button
             type="button"
             onClick={() => {
-              if (disabled) return;
               triggerPulse();
               dotButtonProps.onClick();
             }}
@@ -113,7 +119,6 @@ export default function MorseInput({
           <button
             type="button"
             onClick={() => {
-              if (disabled) return;
               triggerPulse();
               dashButtonProps.onClick();
             }}
