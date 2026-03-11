@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import { Toaster } from 'sonner';
 import './globals.css';
 
 export const viewport: Viewport = {
@@ -21,6 +22,16 @@ export default function RootLayout({
     <html lang="en">
       <body className="min-h-screen antialiased">
         {children}
+        <Toaster
+          position="top-center"
+          toastOptions={{
+            style: {
+              background: 'var(--surface)',
+              color: 'var(--text-primary)',
+              border: '1px solid var(--border)',
+            },
+          }}
+        />
       </body>
     </html>
   );

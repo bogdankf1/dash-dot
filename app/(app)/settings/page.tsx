@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
 import type { GuideType } from '@/types';
 
@@ -22,41 +23,55 @@ export default function SettingsPage() {
 
   useEffect(() => {
     async function loadSettings() {
-      const res = await fetch('/api/user');
-      const data = await res.json();
-      if (data.profile) {
-        setGuide(data.profile.selected_guide || 'google');
+      try {
+        const res = await fetch(`/api/user?timezoneOffset=${new Date().getTimezoneOffset()}`);
+        if (!res.ok) throw new Error('Failed to load');
+        const data = await res.json();
+        if (data.profile) {
+          setGuide(data.profile.selected_guide || 'google');
+        }
+        // Load local settings
+        const localSettings = localStorage.getItem('dashdot-settings');
+        if (localSettings) {
+          const parsed = JSON.parse(localSettings);
+          setAudioEnabled(parsed.audioEnabled ?? true);
+          setInputMode(parsed.inputMode ?? 'both');
+        }
+      } catch (err) {
+        console.error('Failed to load settings:', err);
+        toast.error('Failed to load settings');
+      } finally {
+        setLoading(false);
       }
-      // Load local settings
-      const localSettings = localStorage.getItem('dashdot-settings');
-      if (localSettings) {
-        const parsed = JSON.parse(localSettings);
-        setAudioEnabled(parsed.audioEnabled ?? true);
-        setInputMode(parsed.inputMode ?? 'both');
-      }
-      setLoading(false);
     }
     loadSettings();
   }, []);
 
   const saveSettings = async () => {
     setSaving(true);
+    try {
+      // Save guide to server
+      const res = await fetch('/api/user', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ selected_guide: guide }),
+      });
+      if (!res.ok) throw new Error('Failed to save');
 
-    // Save guide to server
-    await fetch('/api/user', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ selected_guide: guide }),
-    });
+      // Save local settings (derive mnemonic guide from learning guide)
+      const mnemonicGuide = guide === 'google' ? 'hello-morse' : 'dashdot';
+      localStorage.setItem(
+        'dashdot-settings',
+        JSON.stringify({ audioEnabled, inputMode, mnemonicGuide })
+      );
 
-    // Save local settings (derive mnemonic guide from learning guide)
-    const mnemonicGuide = guide === 'google' ? 'hello-morse' : 'dashdot';
-    localStorage.setItem(
-      'dashdot-settings',
-      JSON.stringify({ audioEnabled, inputMode, mnemonicGuide })
-    );
-
-    setSaving(false);
+      toast.success('Settings saved');
+    } catch (err) {
+      console.error('Failed to save settings:', err);
+      toast.error('Failed to save settings');
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (loading) {
@@ -190,10 +205,17 @@ export default function SettingsPage() {
               <button
                 onClick={async () => {
                   setResetting(true);
-                  await fetch('/api/progress', { method: 'DELETE' });
-                  setShowResetModal(false);
-                  setResetting(false);
-                  router.push('/dashboard');
+                  try {
+                    const res = await fetch('/api/progress', { method: 'DELETE' });
+                    if (!res.ok) throw new Error('Failed to reset');
+                    setShowResetModal(false);
+                    router.push('/dashboard');
+                  } catch (err) {
+                    console.error('Failed to reset progress:', err);
+                    toast.error('Failed to reset progress');
+                  } finally {
+                    setResetting(false);
+                  }
                 }}
                 disabled={resetting}
                 className="flex-1 rounded-xl bg-[var(--error)] px-4 py-3 text-sm font-medium text-white disabled:opacity-50"

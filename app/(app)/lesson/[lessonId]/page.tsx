@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
 import { generateLesson, generateWordLesson, calculateXP, updateMastery } from '@/lib/morse/engine';
 import type { Exercise } from '@/lib/morse/engine';
@@ -32,6 +33,7 @@ export default function LessonPage() {
   const [isGameOver, setIsGameOver] = useState(false);
   const [xpEarned, setXpEarned] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [skipAudio, setSkipAudio] = useState(false);
   const [mnemonicGuide, setMnemonicGuide] = useState<MnemonicGuideType>('dashdot');
   const [lessonMeta, setLessonMeta] = useState<{
@@ -45,8 +47,10 @@ export default function LessonPage() {
     new Map()
   );
 
-  useEffect(() => {
-    async function loadLesson() {
+  const loadLesson = useCallback(async () => {
+    setError(false);
+    setLoading(true);
+    try {
       const supabase = createClient();
       const {
         data: { user },
@@ -119,10 +123,17 @@ export default function LessonPage() {
       } catch {}
 
       setLoading(false);
+    } catch (err) {
+      console.error('Failed to load lesson:', err);
+      setError(true);
+      toast.error('Failed to load lesson');
+      setLoading(false);
     }
-
-    loadLesson();
   }, [lessonId, router]);
+
+  useEffect(() => {
+    loadLesson();
+  }, [loadLesson]);
 
   const handleAnswer = useCallback(
     (correct: boolean) => {
@@ -220,10 +231,12 @@ export default function LessonPage() {
             xpEarned: xp,
             accuracy,
             symbolResults: Array.from(symbolResults.values()),
+            timezoneOffset: new Date().getTimezoneOffset(),
           }),
         });
       } catch (err) {
         console.error('Failed to save lesson progress:', err);
+        toast.error('Failed to save lesson progress');
       }
     }
 
@@ -235,6 +248,36 @@ export default function LessonPage() {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-[var(--text-muted)]">Loading lesson...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[var(--background)] px-4">
+        <div className="w-full max-w-sm text-center">
+          <div className="mb-4 text-6xl">:(</div>
+          <h2 className="mb-2 text-2xl font-bold text-[var(--text-primary)]">
+            Something Went Wrong
+          </h2>
+          <p className="mb-8 text-[var(--text-muted)]">
+            Failed to load this lesson. Please try again.
+          </p>
+          <div className="flex gap-3">
+            <button
+              onClick={() => router.push('/dashboard')}
+              className="flex-1 rounded-xl bg-[var(--surface)] px-6 py-3 font-medium text-[var(--text-primary)] ring-1 ring-[var(--border)]"
+            >
+              Back
+            </button>
+            <button
+              onClick={loadLesson}
+              className="flex-1 rounded-xl bg-[var(--primary)] px-6 py-3 font-medium text-white"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
       </div>
     );
   }

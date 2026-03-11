@@ -1,7 +1,8 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
+import { updateProfileSchema } from '@/lib/validation/schemas';
 
-export async function GET() {
+export async function GET(request: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -9,18 +10,25 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  // Read timezone offset from query params
+  const { searchParams } = new URL(request.url);
+  const rawOffset = parseInt(searchParams.get('timezoneOffset') ?? '0', 10);
+  const timezoneOffset = Number.isNaN(rawOffset) ? 0 : Math.max(-720, Math.min(840, rawOffset));
+
   const { data: profile } = await supabase
     .from('profiles')
     .select('*')
     .eq('id', user.id)
     .single();
 
-  // Check streak validity
+  // Check streak validity using user's local date
   if (profile) {
-    const today = new Date().toISOString().split('T')[0];
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    const now = new Date();
+    const localNow = new Date(now.getTime() - timezoneOffset * 60_000);
+    const today = localNow.toISOString().split('T')[0];
+    const yesterdayDate = new Date(localNow);
+    yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+    const yesterdayStr = yesterdayDate.toISOString().split('T')[0];
 
     if (
       profile.last_activity_date &&
@@ -48,18 +56,17 @@ export async function PATCH(request: Request) {
   }
 
   const body = await request.json();
-  const allowedFields = ['username', 'selected_guide'];
-  const updates: Record<string, unknown> = {};
-
-  for (const field of allowedFields) {
-    if (body[field] !== undefined) {
-      updates[field] = body[field];
-    }
+  const parsed = updateProfileSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: 'Invalid request body', details: parsed.error.issues },
+      { status: 400 }
+    );
   }
 
   const { data, error } = await supabase
     .from('profiles')
-    .update(updates)
+    .update(parsed.data)
     .eq('id', user.id)
     .select()
     .single();

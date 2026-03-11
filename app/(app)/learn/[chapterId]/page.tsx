@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import AlphabetGrid from '@/components/ui/AlphabetGrid';
 import { getChapters, getLessonsForChapter } from '@/lib/morse/chapters';
 import type { UserProfile, LetterProgress, LessonHistory, Chapter, LessonConfig } from '@/types';
@@ -15,32 +16,35 @@ export default function ChapterPage() {
   const [letterProgress, setLetterProgress] = useState<LetterProgress[]>([]);
   const [lessonHistory, setLessonHistory] = useState<LessonHistory[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  const fetchData = async () => {
+    setError(false);
+    setLoading(true);
+    try {
+      const [userRes, progressRes] = await Promise.all([
+        fetch(`/api/user?timezoneOffset=${new Date().getTimezoneOffset()}`),
+        fetch('/api/progress'),
+      ]);
+
+      if (!userRes.ok || !progressRes.ok) throw new Error('Failed to load');
+
+      const userData = await userRes.json();
+      setProfile(userData.profile);
+
+      const progressData = await progressRes.json();
+      setLetterProgress(progressData.letterProgress ?? []);
+      setLessonHistory(progressData.lessonHistory ?? []);
+    } catch (err) {
+      console.error('Failed to fetch chapter data:', err);
+      setError(true);
+      toast.error('Failed to load chapter data');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    async function fetchData() {
-      try {
-        const [userRes, progressRes] = await Promise.all([
-          fetch('/api/user'),
-          fetch('/api/progress'),
-        ]);
-
-        if (userRes.ok) {
-          const userData = await userRes.json();
-          setProfile(userData.profile);
-        }
-
-        if (progressRes.ok) {
-          const progressData = await progressRes.json();
-          setLetterProgress(progressData.letterProgress ?? []);
-          setLessonHistory(progressData.lessonHistory ?? []);
-        }
-      } catch (err) {
-        console.error('Failed to fetch chapter data:', err);
-      } finally {
-        setLoading(false);
-      }
-    }
-
     fetchData();
   }, []);
 
@@ -85,6 +89,21 @@ export default function ChapterPage() {
             <div key={i} className="h-16 animate-pulse rounded-xl bg-gray-200" />
           ))}
         </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <p className="mb-4 text-[var(--text-muted)]">Something went wrong loading this chapter.</p>
+        <button
+          type="button"
+          onClick={fetchData}
+          className="rounded-xl bg-[var(--primary)] px-6 py-3 font-medium text-white transition-colors hover:bg-[var(--primary-hover)]"
+        >
+          Try Again
+        </button>
       </div>
     );
   }

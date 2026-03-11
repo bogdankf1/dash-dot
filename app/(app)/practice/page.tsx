@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { toast } from 'sonner';
 import { MORSE_MAP } from '@/lib/morse/codes';
 import { playMorse } from '@/lib/morse/audio';
 import { shuffle } from '@/lib/morse/engine';
@@ -21,12 +22,16 @@ export default function PracticePage() {
   const [category, setCategory] = useState<SymbolCategory>('letters');
   const [stats, setStats] = useState({ correct: 0, total: 0 });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [practicePattern, setPracticePattern] = useState('');
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    async function loadProgress() {
+  const loadProgress = async () => {
+    setError(false);
+    setLoading(true);
+    try {
       const res = await fetch('/api/progress');
+      if (!res.ok) throw new Error('Failed to load');
       const data = await res.json();
       setLetterProgress(data.letterProgress || []);
 
@@ -43,8 +48,16 @@ export default function PracticePage() {
         autoSelected.add('T');
       }
       setSelectedSymbols(autoSelected);
+    } catch (err) {
+      console.error('Failed to load practice data:', err);
+      setError(true);
+      toast.error('Failed to load practice data');
+    } finally {
       setLoading(false);
     }
+  };
+
+  useEffect(() => {
     loadProgress();
   }, []);
 
@@ -120,6 +133,21 @@ export default function PracticePage() {
       <div className="space-y-4">
         <div className="h-8 animate-pulse rounded bg-[var(--border)]" />
         <div className="h-40 animate-pulse rounded-xl bg-[var(--border)]" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <p className="mb-4 text-[var(--text-muted)]">Something went wrong loading practice data.</p>
+        <button
+          type="button"
+          onClick={loadProgress}
+          className="rounded-xl bg-[var(--primary)] px-6 py-3 font-medium text-white transition-colors hover:bg-[var(--primary-hover)]"
+        >
+          Try Again
+        </button>
       </div>
     );
   }

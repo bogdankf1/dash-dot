@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import Link from 'next/link';
 import type { UserProfile, LessonHistory, LetterProgress } from '@/types';
 
@@ -33,16 +34,75 @@ const BADGES: { id: string; label: string; icon: string; check: BadgeCheck }[] =
   }},
 ];
 
+function ActivityHeatmap({ last30Days }: { last30Days: { date: string; count: number; xp: number }[] }) {
+  const [activeDay, setActiveDay] = useState<number | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const dismiss = useCallback(() => setActiveDay(null), []);
+
+  useEffect(() => {
+    if (activeDay === null) return;
+    const handler = (e: PointerEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        dismiss();
+      }
+    };
+    document.addEventListener('pointerdown', handler);
+    return () => document.removeEventListener('pointerdown', handler);
+  }, [activeDay, dismiss]);
+
+  return (
+    <div className="rounded-xl bg-[var(--surface)] p-4 ring-1 ring-[var(--border)]">
+      <h3 className="mb-3 text-sm font-semibold text-[var(--text-primary)]">
+        Activity (Last 30 Days)
+      </h3>
+      <div ref={containerRef} className="grid grid-cols-10 gap-1">
+        {last30Days.map((day, i) => (
+          <div
+            key={day.date}
+            className="relative aspect-square rounded-sm cursor-pointer"
+            style={{
+              backgroundColor:
+                day.count === 0
+                  ? 'var(--border)'
+                  : day.count === 1
+                    ? '#bbf7d0'
+                    : day.count <= 3
+                      ? '#4ade80'
+                      : '#16a34a',
+            }}
+            onPointerEnter={() => setActiveDay(i)}
+            onPointerLeave={() => setActiveDay(null)}
+            onClick={() => setActiveDay(activeDay === i ? null : i)}
+          >
+            {activeDay === i && (
+              <div className="absolute bottom-full left-1/2 z-10 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded-lg bg-[var(--text-primary)] px-2.5 py-1.5 text-xs text-[var(--background)] shadow-lg">
+                <div className="font-medium">{day.date}</div>
+                <div>{day.count} lesson{day.count !== 1 ? 's' : ''} &middot; {day.xp} XP</div>
+                <div className="absolute left-1/2 top-full -translate-x-1/2 border-4 border-transparent border-t-[var(--text-primary)]" />
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function ProfilePage() {
   const router = useRouter();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [history, setHistory] = useState<LessonHistory[]>([]);
   const [letterProgress, setLetterProgress] = useState<LetterProgress[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
-  useEffect(() => {
-    async function loadData() {
-      const res = await fetch('/api/user');
+  const loadData = async () => {
+    setError(false);
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/user?timezoneOffset=${new Date().getTimezoneOffset()}`);
+      if (!res.ok) throw new Error('Failed to load');
       const userData = await res.json();
       if (!userData.profile) {
         router.push('/login');
@@ -51,11 +111,20 @@ export default function ProfilePage() {
       setProfile(userData.profile);
 
       const progressRes = await fetch('/api/progress');
+      if (!progressRes.ok) throw new Error('Failed to load progress');
       const progressData = await progressRes.json();
       setHistory(progressData.lessonHistory || []);
       setLetterProgress(progressData.letterProgress || []);
+    } catch (err) {
+      console.error('Failed to load profile:', err);
+      setError(true);
+      toast.error('Failed to load profile data');
+    } finally {
       setLoading(false);
     }
+  };
+
+  useEffect(() => {
     loadData();
   }, [router]);
 
@@ -68,6 +137,21 @@ export default function ProfilePage() {
     );
   }
 
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <p className="mb-4 text-[var(--text-muted)]">Something went wrong loading your profile.</p>
+        <button
+          type="button"
+          onClick={loadData}
+          className="rounded-xl bg-[var(--primary)] px-6 py-3 font-medium text-white transition-colors hover:bg-[var(--primary-hover)]"
+        >
+          Try Again
+        </button>
+      </div>
+    );
+  }
+
   if (!profile) return null;
 
   const earnedBadges = BADGES.filter((b) =>
@@ -75,18 +159,22 @@ export default function ProfilePage() {
   );
 
   // Build activity heatmap for last 30 days
-  const activityMap = new Map<string, number>();
+  const activityMap = new Map<string, { count: number; xp: number }>();
   for (const lesson of history) {
-    const date = lesson.completed_at.split('T')[0];
-    activityMap.set(date, (activityMap.get(date) || 0) + 1);
+    const date = new Date(lesson.completed_at).toLocaleDateString('sv-SE');
+    const existing = activityMap.get(date) || { count: 0, xp: 0 };
+    existing.count += 1;
+    existing.xp += lesson.xp_earned;
+    activityMap.set(date, existing);
   }
 
-  const last30Days: { date: string; count: number }[] = [];
+  const last30Days: { date: string; count: number; xp: number }[] = [];
   for (let i = 29; i >= 0; i--) {
     const d = new Date();
     d.setDate(d.getDate() - i);
-    const dateStr = d.toISOString().split('T')[0];
-    last30Days.push({ date: dateStr, count: activityMap.get(dateStr) || 0 });
+    const dateStr = d.toLocaleDateString('sv-SE');
+    const activity = activityMap.get(dateStr);
+    last30Days.push({ date: dateStr, count: activity?.count || 0, xp: activity?.xp || 0 });
   }
 
   return (
@@ -146,30 +234,7 @@ export default function ProfilePage() {
       </div>
 
       {/* Activity (last 30 days) */}
-      <div className="rounded-xl bg-[var(--surface)] p-4 ring-1 ring-[var(--border)]">
-        <h3 className="mb-3 text-sm font-semibold text-[var(--text-primary)]">
-          Activity (Last 30 Days)
-        </h3>
-        <div className="grid grid-cols-10 gap-1">
-          {last30Days.map((day) => (
-            <div
-              key={day.date}
-              title={`${day.date}: ${day.count} lesson${day.count !== 1 ? 's' : ''}`}
-              className="aspect-square rounded-sm"
-              style={{
-                backgroundColor:
-                  day.count === 0
-                    ? 'var(--border)'
-                    : day.count === 1
-                      ? '#bbf7d0'
-                      : day.count <= 3
-                        ? '#4ade80'
-                        : '#16a34a',
-              }}
-            />
-          ))}
-        </div>
-      </div>
+      <ActivityHeatmap last30Days={last30Days} />
 
       {/* Badges */}
       <div className="rounded-xl bg-[var(--surface)] p-4 ring-1 ring-[var(--border)]">

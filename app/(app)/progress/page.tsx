@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import AlphabetGrid from '@/components/ui/AlphabetGrid';
 import type { LetterProgress, LessonHistory } from '@/types';
 
@@ -9,24 +10,28 @@ export default function ProgressPage() {
   const [lessonHistory, setLessonHistory] = useState<LessonHistory[]>([]);
   const [xp, setXp] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  const fetchProgress = async () => {
+    setError(false);
+    setLoading(true);
+    try {
+      const res = await fetch('/api/progress');
+      if (!res.ok) throw new Error('Failed to load');
+      const data = await res.json();
+      setLetterProgress(data.letterProgress ?? []);
+      setLessonHistory(data.lessonHistory ?? []);
+      setXp(data.xp ?? 0);
+    } catch (err) {
+      console.error('Failed to fetch progress:', err);
+      setError(true);
+      toast.error('Failed to load progress data');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    async function fetchProgress() {
-      try {
-        const res = await fetch('/api/progress');
-        if (res.ok) {
-          const data = await res.json();
-          setLetterProgress(data.letterProgress ?? []);
-          setLessonHistory(data.lessonHistory ?? []);
-          setXp(data.xp ?? 0);
-        }
-      } catch (err) {
-        console.error('Failed to fetch progress:', err);
-      } finally {
-        setLoading(false);
-      }
-    }
-
     fetchProgress();
   }, []);
 
@@ -57,6 +62,21 @@ export default function ProgressPage() {
             <div key={i} className="h-24 animate-pulse rounded-xl bg-gray-200" />
           ))}
         </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <p className="mb-4 text-[var(--text-muted)]">Something went wrong loading your progress.</p>
+        <button
+          type="button"
+          onClick={fetchProgress}
+          className="rounded-xl bg-[var(--primary)] px-6 py-3 font-medium text-white transition-colors hover:bg-[var(--primary-hover)]"
+        >
+          Try Again
+        </button>
       </div>
     );
   }
