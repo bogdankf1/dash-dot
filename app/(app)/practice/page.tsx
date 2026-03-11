@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { MORSE_MAP } from '@/lib/morse/codes';
 import { playMorse } from '@/lib/morse/audio';
+import { shuffle } from '@/lib/morse/engine';
 import type { LetterProgress } from '@/types';
 import MorseDisplay from '@/components/lesson/MorseDisplay';
 import MorseInput from '@/components/lesson/MorseInput';
@@ -21,6 +22,7 @@ export default function PracticePage() {
   const [stats, setStats] = useState({ correct: 0, total: 0 });
   const [loading, setLoading] = useState(true);
   const [practicePattern, setPracticePattern] = useState('');
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     async function loadProgress() {
@@ -58,8 +60,9 @@ export default function PracticePage() {
     }
   }, [selectedSymbols, mode]);
 
+  const minSymbols = mode === 'identify' ? 4 : 2;
   const startPractice = () => {
-    if (selectedSymbols.size < 2) return;
+    if (selectedSymbols.size < minSymbols) return;
     setIsActive(true);
     setStats({ correct: 0, total: 0 });
     pickRandom();
@@ -74,7 +77,7 @@ export default function PracticePage() {
         total: prev.total + 1,
       }));
       setPracticePattern('');
-      setTimeout(() => pickRandom(), 1000);
+      timerRef.current = setTimeout(() => pickRandom(), 1000);
     },
     [currentSymbol, practicePattern, pickRandom]
   );
@@ -88,10 +91,17 @@ export default function PracticePage() {
         correct: prev.correct + (correct ? 1 : 0),
         total: prev.total + 1,
       }));
-      setTimeout(() => pickRandom(), 1000);
+      timerRef.current = setTimeout(() => pickRandom(), 1000);
     },
     [currentSymbol, pickRandom]
   );
+
+  // Cleanup timer on unmount or when leaving practice
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
 
   const toggleSymbol = (symbol: string) => {
     setSelectedSymbols((prev) => {
@@ -239,7 +249,7 @@ export default function PracticePage() {
 
         <button
           onClick={startPractice}
-          disabled={selectedSymbols.size < 2}
+          disabled={selectedSymbols.size < minSymbols}
           className="w-full rounded-xl bg-[var(--primary)] px-6 py-4 font-medium text-white transition-colors hover:bg-[var(--primary-hover)] disabled:opacity-50"
         >
           Start Practice ({(() => {
@@ -255,9 +265,8 @@ export default function PracticePage() {
   const options = currentSymbol
     ? (() => {
         const syms = Array.from(selectedSymbols).filter((s) => s !== currentSymbol);
-        const shuffled = syms.sort(() => Math.random() - 0.5).slice(0, 3);
-        shuffled.push(currentSymbol);
-        return shuffled.sort(() => Math.random() - 0.5);
+        const wrong = shuffle(syms).slice(0, 3);
+        return shuffle([currentSymbol, ...wrong]);
       })()
     : [];
 

@@ -191,12 +191,13 @@ export default function LessonPage() {
     if (!isComplete || !lessonMeta) return;
 
     const meta = lessonMeta;
+    let cancelled = false;
     async function saveResults() {
       const supabase = createClient();
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user || cancelled) return;
 
       const { data: profile } = await supabase
         .from('profiles')
@@ -207,22 +208,27 @@ export default function LessonPage() {
       const streak = profile?.streak || 0;
       const accuracy = totalAnswered > 0 ? correctCount / totalAnswered : 0;
       const xp = calculateXP(correctCount, totalAnswered, streak);
-      setXpEarned(xp);
+      if (!cancelled) setXpEarned(xp);
 
-      await fetch('/api/progress', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chapterId: meta.chapterId,
-          lessonId,
-          xpEarned: xp,
-          accuracy,
-          symbolResults: Array.from(symbolResults.values()),
-        }),
-      });
+      try {
+        await fetch('/api/progress', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chapterId: meta.chapterId,
+            lessonId,
+            xpEarned: xp,
+            accuracy,
+            symbolResults: Array.from(symbolResults.values()),
+          }),
+        });
+      } catch (err) {
+        console.error('Failed to save lesson progress:', err);
+      }
     }
 
     saveResults();
+    return () => { cancelled = true; };
   }, [isComplete, lessonMeta, correctCount, totalAnswered, lessonId, symbolResults]);
 
   if (loading) {
@@ -235,7 +241,7 @@ export default function LessonPage() {
 
   if (isGameOver) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center px-4">
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[var(--background)] px-4">
         <div className="w-full max-w-sm text-center">
           <div className="mb-4 text-6xl">💔</div>
           <h2 className="mb-2 text-2xl font-bold text-[var(--text-primary)]">
@@ -266,7 +272,7 @@ export default function LessonPage() {
   if (isComplete) {
     const accuracy = totalAnswered > 0 ? correctCount / totalAnswered : 0;
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center px-4">
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[var(--background)] px-4">
         <div className="w-full max-w-sm text-center">
           <div className="mb-4 text-6xl">🎉</div>
           <h2 className="mb-2 text-2xl font-bold text-[var(--text-primary)]">

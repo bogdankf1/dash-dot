@@ -61,6 +61,15 @@ export async function playBeep(
   oscillator.start(ctx.currentTime);
   oscillator.stop(ctx.currentTime + duration / 1000);
 
+  oscillator.onended = () => {
+    oscillator.disconnect();
+    gainNode.disconnect();
+    if (tap && activeTapOsc === oscillator) {
+      activeTapOsc = null;
+      activeTapGain = null;
+    }
+  };
+
   return new Promise((resolve) => {
     setTimeout(resolve, duration);
   });

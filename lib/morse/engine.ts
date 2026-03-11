@@ -21,7 +21,7 @@ export interface Exercise {
   showMnemonic: boolean;
 }
 
-function shuffle<T>(arr: T[]): T[] {
+export function shuffle<T>(arr: T[]): T[] {
   const result = [...arr];
   for (let i = result.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -35,11 +35,15 @@ function pickRandomOptions(
   pool: string[],
   count: number
 ): string[] {
-  const filtered = pool.filter((s) => s !== correct);
+  let filtered = pool.filter((s) => s !== correct);
+  // If pool is too small, pad with random letters from the full alphabet
+  if (filtered.length < count) {
+    const allSymbols = Object.keys(MORSE_MAP).filter((s) => s !== correct && !filtered.includes(s));
+    filtered = [...filtered, ...shuffle(allSymbols).slice(0, count - filtered.length)];
+  }
   const shuffled = shuffle(filtered);
   const wrong = shuffled.slice(0, count);
-  const options = shuffle([correct, ...wrong]);
-  return options;
+  return shuffle([correct, ...wrong]);
 }
 
 export function generateLesson(

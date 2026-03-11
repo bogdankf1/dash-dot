@@ -16,6 +16,11 @@ export default function SettingsPage() {
   const [resetting, setResetting] = useState(false);
 
   useEffect(() => {
+    document.body.style.overflow = showResetModal ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [showResetModal]);
+
+  useEffect(() => {
     async function loadSettings() {
       const res = await fetch('/api/user');
       const data = await res.json();
