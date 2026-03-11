@@ -340,14 +340,14 @@ export default function PracticePage() {
                     Correct!
                   </p>
                 )}
-                {feedback === 'wrong' && (
+                {feedback === 'wrong' && currentSymbol && (
                   <div className="space-y-2">
                     <p className="text-lg font-bold" style={{ color: 'var(--error)' }}>
                       The answer was:
                     </p>
-                    <p className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
-                      {currentSymbol} = {MORSE_MAP[currentSymbol]?.split('').map((c) => (c === '.' ? '\u00B7' : '\u2014')).join(' ')}
-                    </p>
+                    <div className="flex items-center justify-center">
+                      <MorseDisplay pattern={MORSE_MAP[currentSymbol]} size="md" />
+                    </div>
                   </div>
                 )}
               </div>

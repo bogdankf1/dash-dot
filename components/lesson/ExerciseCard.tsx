@@ -230,14 +230,15 @@ export default function ExerciseCard({
               <p className="text-lg font-bold" style={{ color: 'var(--error)' }}>
                 The answer was:
               </p>
-              <p
-                className="text-2xl font-bold"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                {exercise.type === 'word-listen' || exercise.type === 'word-spell' || exercise.type === 'word-encode'
-                  ? exercise.word
-                  : `${exercise.symbol} = ${patternToReadable(correctPattern)}`}
-              </p>
+              {exercise.type === 'word-listen' || exercise.type === 'word-spell' || exercise.type === 'word-encode' ? (
+                <p className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+                  {exercise.word}
+                </p>
+              ) : (
+                <div className="flex items-center justify-center">
+                  <MorseDisplay pattern={correctPattern} size="md" />
+                </div>
+              )}
             </div>
           )}
         </div>
