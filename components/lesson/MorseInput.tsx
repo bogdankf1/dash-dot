@@ -1,8 +1,19 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useMorseInput } from '@/lib/hooks/useMorseInput';
+import { playBeep } from '@/lib/morse/audio';
 import MorseDisplay from '@/components/lesson/MorseDisplay';
+
+function isAudioEnabled(): boolean {
+  try {
+    const settings = localStorage.getItem('dashdot-settings');
+    if (!settings) return true;
+    return JSON.parse(settings).audioEnabled !== false;
+  } catch {
+    return true;
+  }
+}
 
 interface MorseInputProps {
   onChange: (pattern: string) => void;
@@ -15,8 +26,14 @@ export default function MorseInput({
 }: MorseInputProps) {
   const [pulsing, setPulsing] = useState(false);
 
+  const handleSymbol = useCallback((symbol: '.' | '-') => {
+    if (isAudioEnabled()) {
+      playBeep(symbol === '.' ? 80 : 240, 600, true);
+    }
+  }, []);
+
   const { currentPattern, isBuilding, tapAreaProps, dotButtonProps, dashButtonProps, reset } =
-    useMorseInput();
+    useMorseInput(handleSymbol);
 
   // Notify parent whenever pattern changes
   useEffect(() => {
@@ -55,14 +72,14 @@ export default function MorseInput({
 
   return (
     <div className="flex flex-col items-center gap-4 w-full">
-      <div className="min-h-[3.5rem] flex flex-col items-center justify-center">
-        {currentPattern && (
-          <div className="mb-2 flex items-center gap-2">
+      <div className="min-h-[4.5rem] flex flex-col items-center justify-center">
+        {currentPattern ? (
+          <div className="flex flex-col items-center gap-2">
             <MorseDisplay pattern={currentPattern} size="sm" />
             <button
               type="button"
               onClick={handleClear}
-              className="text-xs font-medium px-2 py-1 rounded-lg transition-colors cursor-pointer"
+              className="text-xs font-medium px-2 py-1 rounded-lg transition-colors cursor-pointer active:scale-95"
               style={{
                 color: 'var(--text-muted)',
                 backgroundColor: 'var(--background)',
@@ -72,6 +89,8 @@ export default function MorseInput({
               Clear
             </button>
           </div>
+        ) : (
+          <div className="h-[1.5rem]" />
         )}
 
         {isBuilding && (
@@ -107,7 +126,7 @@ export default function MorseInput({
               triggerPulse();
               dotButtonProps.onClick();
             }}
-            className="flex-1 h-20 rounded-xl text-3xl font-bold cursor-pointer transition-colors"
+            className="flex-1 h-20 rounded-xl text-3xl font-bold cursor-pointer transition-colors active:scale-95"
             style={{
               backgroundColor: 'var(--surface)',
               border: '2px solid var(--border)',
@@ -122,7 +141,7 @@ export default function MorseInput({
               triggerPulse();
               dashButtonProps.onClick();
             }}
-            className="flex-1 h-20 rounded-xl text-3xl font-bold cursor-pointer transition-colors"
+            className="flex-1 h-20 rounded-xl text-3xl font-bold cursor-pointer transition-colors active:scale-95"
             style={{
               backgroundColor: 'var(--surface)',
               border: '2px solid var(--border)',

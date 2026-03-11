@@ -110,3 +110,22 @@ export async function POST(request: Request) {
 
   return NextResponse.json({ success: true });
 }
+
+export async function DELETE() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  await supabase.from('letter_progress').delete().eq('user_id', user.id);
+  await supabase.from('lesson_history').delete().eq('user_id', user.id);
+  await supabase.from('profiles').update({
+    xp: 0,
+    streak: 0,
+    last_activity_date: null,
+  }).eq('id', user.id);
+
+  return NextResponse.json({ success: true });
+}

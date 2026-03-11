@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import type { Exercise } from '@/lib/morse/engine';
 import { MORSE_MAP } from '@/lib/morse/codes';
 import { playMorse, playMorseWord } from '@/lib/morse/audio';
@@ -46,14 +46,30 @@ export default function ExerciseCard({
   // Text input state (for translate, word-listen, word-spell)
   const [textInput, setTextInput] = useState('');
 
-  // Word-encode letter index
+  // Identify: track which option was picked
+  const [selectedOption, setSelectedOption] = useState<string | null>(null);
+
+  // Word-encode letter index + completed patterns for previous letters
   const [currentLetterIndex, setCurrentLetterIndex] = useState(0);
+  const [completedPatterns, setCompletedPatterns] = useState<string[]>([]);
 
   // Word-listen transcript toggle
   const [showTranscript, setShowTranscript] = useState(false);
 
   // Track correctness for continue
   const [lastCorrect, setLastCorrect] = useState(false);
+
+  // Audio setting
+  const [audioEnabled, setAudioEnabled] = useState(true);
+  useEffect(() => {
+    try {
+      const settings = localStorage.getItem('dashdot-settings');
+      if (settings) {
+        const parsed = JSON.parse(settings);
+        if (parsed.audioEnabled === false) setAudioEnabled(false);
+      }
+    } catch {}
+  }, []);
 
   const maxRetries = 2;
 
@@ -107,9 +123,11 @@ export default function ExerciseCard({
       const expectedPattern = MORSE_MAP[currentLetter] || '';
       if (morsePattern === expectedPattern) {
         if (currentLetterIndex + 1 >= letters.length) {
+          setCompletedPatterns((prev) => [...prev, morsePattern]);
           markCorrect();
         } else {
           // Advance to next letter, reset morse pattern, stay in check state
+          setCompletedPatterns((prev) => [...prev, morsePattern]);
           setCurrentLetterIndex((prev) => prev + 1);
           setMorsePattern('');
           setFeedback(null);
@@ -132,6 +150,7 @@ export default function ExerciseCard({
   const handleIdentifyChoice = useCallback(
     (choice: string) => {
       if (inputDisabled) return;
+      setSelectedOption(choice);
       if (choice === exercise.symbol) {
         markCorrect();
       } else {
@@ -155,6 +174,23 @@ export default function ExerciseCard({
   // For introduce, the button is always "continue" (no check needed)
   const introduceButtonState: ButtonState = 'continue';
   const effectiveButtonState = exercise.type === 'introduce' ? introduceButtonState : buttonState;
+
+  // Submit on Enter key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      if (effectiveButtonState === 'check' && isCheckEnabled) {
+        handleCheck();
+      } else if (effectiveButtonState === 'continue') {
+        onAnswer(exercise.type === 'introduce' ? true : lastCorrect);
+      } else if (effectiveButtonState === 'retry') {
+        handleRetry();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [effectiveButtonState, isCheckEnabled, handleCheck, handleRetry, onAnswer, exercise.type, lastCorrect]);
 
   const feedbackBg =
     feedback === 'correct'
@@ -261,50 +297,58 @@ export default function ExerciseCard({
           <p className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>
             Listen and identify the letter:
           </p>
-          <button
-            type="button"
-            onClick={() => playMorse(correctPattern)}
-            className="px-6 py-3 rounded-xl font-medium transition-colors cursor-pointer"
-            style={{
-              backgroundColor: 'var(--primary)',
-              color: '#FFFFFF',
-            }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.backgroundColor = 'var(--primary-hover)')
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.backgroundColor = 'var(--primary)')
-            }
-          >
-            Play Sound
-          </button>
+          {audioEnabled && <SpeakerButtons onPlay={() => playMorse(correctPattern)} onPlaySlow={() => playMorse(correctPattern, 0.5)} />}
           <div className="grid grid-cols-2 gap-3 w-full max-w-xs">
-            {(exercise.options || []).map((option) => (
-              <button
-                key={option}
-                type="button"
-                onClick={() => handleIdentifyChoice(option)}
-                disabled={inputDisabled}
-                className="h-20 sm:h-16 rounded-xl text-2xl font-bold transition-colors cursor-pointer disabled:opacity-50"
-                style={{
-                  backgroundColor: 'var(--surface)',
-                  border: '2px solid var(--border)',
-                  color: 'var(--text-primary)',
-                }}
-                onMouseEnter={(e) => {
-                  if (!inputDisabled) {
-                    e.currentTarget.style.borderColor = 'var(--primary)';
-                    e.currentTarget.style.color = 'var(--primary)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = 'var(--border)';
-                  e.currentTarget.style.color = 'var(--text-primary)';
-                }}
-              >
-                {option}
-              </button>
-            ))}
+            {(exercise.options || []).map((option) => {
+              const isCorrectOption = option === exercise.symbol;
+              const isSelected = option === selectedOption;
+              const answered = feedback !== null && inputDisabled;
+
+              let optionBg = 'var(--surface)';
+              let optionBorder = 'var(--border)';
+              let optionColor = 'var(--text-primary)';
+
+              if (answered) {
+                if (isCorrectOption) {
+                  optionBg = '#dcfce7';
+                  optionBorder = '#4ade80';
+                  optionColor = '#166534';
+                } else if (isSelected) {
+                  optionBg = '#fee2e2';
+                  optionBorder = '#f87171';
+                  optionColor = '#991b1b';
+                }
+              }
+
+              return (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => handleIdentifyChoice(option)}
+                  disabled={inputDisabled}
+                  className="h-20 sm:h-16 rounded-xl text-2xl font-bold transition-colors cursor-pointer disabled:opacity-100"
+                  style={{
+                    backgroundColor: optionBg,
+                    border: `2px solid ${optionBorder}`,
+                    color: optionColor,
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!inputDisabled) {
+                      e.currentTarget.style.borderColor = 'var(--primary)';
+                      e.currentTarget.style.color = 'var(--primary)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!inputDisabled) {
+                      e.currentTarget.style.borderColor = 'var(--border)';
+                      e.currentTarget.style.color = 'var(--text-primary)';
+                    }
+                  }}
+                >
+                  {option}
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
@@ -351,6 +395,7 @@ export default function ExerciseCard({
           onTextChange={setTextInput}
           showTranscript={showTranscript}
           onToggleTranscript={() => setShowTranscript((prev) => !prev)}
+          audioEnabled={audioEnabled}
         />
       )}
 
@@ -358,6 +403,7 @@ export default function ExerciseCard({
         <WordEncodeBody
           word={exercise.word}
           currentLetterIndex={currentLetterIndex}
+          completedPatterns={completedPatterns}
           showAnswer={showAnswer}
           inputDisabled={inputDisabled}
           onMorseChange={setMorsePattern}
@@ -384,7 +430,7 @@ export default function ExerciseCard({
             type="button"
             onClick={handleCheck}
             disabled={!isCheckEnabled}
-            className="w-full h-14 rounded-xl font-semibold text-white text-lg transition-colors cursor-pointer disabled:opacity-40"
+            className="w-full h-14 rounded-xl font-semibold text-white text-lg transition-colors cursor-pointer disabled:opacity-40 active:scale-95"
             style={{ backgroundColor: 'var(--primary)' }}
           >
             Check
@@ -394,7 +440,7 @@ export default function ExerciseCard({
           <button
             type="button"
             onClick={() => onAnswer(exercise.type === 'introduce' ? true : lastCorrect)}
-            className="w-full h-14 rounded-xl font-semibold text-white text-lg transition-colors cursor-pointer"
+            className="w-full h-14 rounded-xl font-semibold text-white text-lg transition-colors cursor-pointer active:scale-95"
             style={{
               backgroundColor: exercise.type === 'introduce' || lastCorrect ? 'var(--success)' : 'var(--primary)',
             }}
@@ -406,7 +452,7 @@ export default function ExerciseCard({
           <button
             type="button"
             onClick={handleRetry}
-            className="w-full h-14 rounded-xl font-semibold text-white text-lg transition-colors cursor-pointer"
+            className="w-full h-14 rounded-xl font-semibold text-white text-lg transition-colors cursor-pointer active:scale-95"
             style={{ backgroundColor: 'var(--primary)' }}
           >
             Retry
@@ -419,6 +465,36 @@ export default function ExerciseCard({
 
 /* ---- Sub-components (display only, no forms/buttons) ---- */
 
+function SpeakerButtons({ onPlay, onPlaySlow }: { onPlay: () => void; onPlaySlow: () => void }) {
+  return (
+    <div className="flex items-center gap-3">
+      <button
+        type="button"
+        onClick={onPlay}
+        className="flex h-12 w-12 items-center justify-center rounded-full transition-colors cursor-pointer active:scale-95"
+        style={{ backgroundColor: 'var(--primary)', color: '#FFFFFF' }}
+        title="Play"
+      >
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0014 8.5v7a4.49 4.49 0 002.5-3.5zM14 3.23v2.06a6.51 6.51 0 010 13.42v2.06A8.51 8.51 0 0014 3.23z" />
+        </svg>
+      </button>
+      <button
+        type="button"
+        onClick={onPlaySlow}
+        className="flex h-12 items-center gap-1 px-3 rounded-full transition-colors cursor-pointer active:scale-95"
+        style={{ backgroundColor: 'var(--surface)', border: '2px solid var(--border)', color: 'var(--text-muted)' }}
+        title="Play slow"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M3 9v6h4l5 5V4L7 9H3z" />
+        </svg>
+        <span className="text-xs font-bold">&frac12;</span>
+      </button>
+    </div>
+  );
+}
+
 function WordListenBody({
   word,
   inputDisabled,
@@ -427,6 +503,7 @@ function WordListenBody({
   onTextChange,
   showTranscript,
   onToggleTranscript,
+  audioEnabled,
 }: {
   word: string;
   inputDisabled: boolean;
@@ -435,6 +512,7 @@ function WordListenBody({
   onTextChange: (value: string) => void;
   showTranscript: boolean;
   onToggleTranscript: () => void;
+  audioEnabled: boolean;
 }) {
   const letters = word.toUpperCase().split('');
 
@@ -443,16 +521,7 @@ function WordListenBody({
       <p className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>
         Listen to the word and type it:
       </p>
-      <button
-        type="button"
-        onClick={() => playMorseWord(word)}
-        className="px-6 py-3 rounded-xl font-medium transition-colors cursor-pointer"
-        style={{ backgroundColor: 'var(--primary)', color: '#FFFFFF' }}
-        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--primary-hover)')}
-        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'var(--primary)')}
-      >
-        Play Word
-      </button>
+      {audioEnabled && <SpeakerButtons onPlay={() => playMorseWord(word)} onPlaySlow={() => playMorseWord(word, 0.5)} />}
       <button
         type="button"
         onClick={onToggleTranscript}
@@ -466,8 +535,7 @@ function WordListenBody({
           {letters.map((letter, i) => {
             const pattern = MORSE_MAP[letter] || '';
             return (
-              <div key={i} className="flex flex-col items-center gap-1 rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2">
-                <span className="text-xs font-bold" style={{ color: 'var(--text-primary)' }}>{letter}</span>
+              <div key={i} className="flex flex-col items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2">
                 <MorseDisplay pattern={pattern} size="sm" />
               </div>
             );
@@ -504,12 +572,14 @@ function WordListenBody({
 function WordEncodeBody({
   word,
   currentLetterIndex,
+  completedPatterns,
   showAnswer,
   inputDisabled,
   onMorseChange,
 }: {
   word: string;
   currentLetterIndex: number;
+  completedPatterns: string[];
   showAnswer: boolean;
   inputDisabled: boolean;
   onMorseChange: (pattern: string) => void;
@@ -537,13 +607,26 @@ function WordEncodeBody({
           </span>
         ))}
       </div>
+      {completedPatterns.length > 0 && (
+        <div className="flex items-center gap-3 flex-wrap justify-center">
+          {completedPatterns.map((p, i) => (
+            <span
+              key={i}
+              className="rounded-lg px-2 py-1 font-mono text-sm"
+              style={{ backgroundColor: 'rgba(34,197,94,0.1)', color: 'var(--success)' }}
+            >
+              {patternToReadable(p)}
+            </span>
+          ))}
+        </div>
+      )}
       {showAnswer && (
         <p className="text-lg font-mono" style={{ color: 'var(--text-muted)' }}>
           {currentLetter} = {patternToReadable(currentPattern)}
         </p>
       )}
       {!inputDisabled && (
-        <MorseInput onChange={onMorseChange} />
+        <MorseInput onChange={onMorseChange} key={currentLetterIndex} />
       )}
     </div>
   );

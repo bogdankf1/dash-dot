@@ -4,14 +4,17 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 const HOLD_THRESHOLD = 200;
 
-export function useMorseInput() {
+export function useMorseInput(onSymbol?: (symbol: '.' | '-') => void) {
   const [currentPattern, setCurrentPattern] = useState('');
   const holdStartRef = useRef<number>(0);
   const patternRef = useRef('');
+  const onSymbolRef = useRef(onSymbol);
+  onSymbolRef.current = onSymbol;
 
   const appendSymbol = useCallback((symbol: '.' | '-') => {
     patternRef.current += symbol;
     setCurrentPattern(patternRef.current);
+    onSymbolRef.current?.(symbol);
   }, []);
 
   const handleKeyDown = useCallback(

@@ -317,16 +317,42 @@ export default function LessonPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <div className="px-4 pt-4">
-        <ProgressBar
-          current={currentIndex}
-          total={exercises.length}
-          lives={lives}
-        />
+    <div className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-[var(--background)]">
+      <div className="flex-shrink-0 px-4 pt-4">
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => router.push(lessonMeta?.chapterId ? `/learn/${lessonMeta.chapterId}` : '/dashboard')}
+            className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg text-[var(--text-muted)] transition-colors hover:bg-[var(--surface)] hover:text-[var(--text-primary)]"
+            title="Exit lesson"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+          <div className="flex-1">
+            <ProgressBar
+              current={currentIndex}
+              total={exercises.length}
+              lives={lives}
+            />
+          </div>
+        </div>
+        {!skipAudio && (
+          <div className="mt-2 flex justify-center">
+            <button
+              type="button"
+              onClick={() => setSkipAudio(true)}
+              className="rounded-lg px-3 py-1.5 text-xs font-medium text-[var(--text-muted)] ring-1 ring-[var(--border)] transition-colors"
+            >
+              Can&apos;t listen now? Skip audio
+            </button>
+          </div>
+        )}
       </div>
 
-      <div className="flex flex-1 flex-col items-center justify-center px-4 py-8">
+      <div className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto px-4 py-4">
         {exercises[currentIndex] && (
           <ExerciseCard
             key={currentIndex}
@@ -338,18 +364,6 @@ export default function LessonPage() {
           />
         )}
       </div>
-
-      {!skipAudio && (
-        <div className="fixed bottom-0 left-0 right-0 flex justify-center border-t border-[var(--border)] bg-[var(--background)] px-4 py-3" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
-          <button
-            type="button"
-            onClick={() => setSkipAudio(true)}
-            className="rounded-xl bg-[var(--surface)] px-5 py-3 text-sm font-medium text-[var(--text-muted)] ring-1 ring-[var(--border)] transition-colors"
-          >
-            Can&apos;t listen now? Skip audio
-          </button>
-        </div>
-      )}
     </div>
   );
 }

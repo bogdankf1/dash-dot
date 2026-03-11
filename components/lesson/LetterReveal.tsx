@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import MorseDisplay from '@/components/lesson/MorseDisplay';
 import MnemonicIllustration from '@/components/lesson/MnemonicIllustration';
 import { playMorse } from '@/lib/morse/audio';
@@ -25,12 +25,33 @@ export default function LetterReveal({
   mnemonicGuide = 'dashdot',
 }: LetterRevealProps) {
   const [isPlaying, setIsPlaying] = useState(false);
+  const [audioEnabled, setAudioEnabled] = useState(true);
+
+  useEffect(() => {
+    try {
+      const settings = localStorage.getItem('dashdot-settings');
+      if (settings) {
+        const parsed = JSON.parse(settings);
+        if (parsed.audioEnabled === false) setAudioEnabled(false);
+      }
+    } catch {}
+  }, []);
 
   const handlePlaySound = async () => {
     if (isPlaying) return;
     setIsPlaying(true);
     try {
       await playMorse(pattern);
+    } finally {
+      setIsPlaying(false);
+    }
+  };
+
+  const handlePlaySlow = async () => {
+    if (isPlaying) return;
+    setIsPlaying(true);
+    try {
+      await playMorse(pattern, 0.5);
     } finally {
       setIsPlaying(false);
     }
@@ -58,19 +79,35 @@ export default function LetterReveal({
         {patternToReadable(pattern)}
       </p>
 
-      <button
-        type="button"
-        onClick={handlePlaySound}
-        disabled={isPlaying}
-        className="px-6 py-3 rounded-xl font-medium transition-colors cursor-pointer disabled:opacity-50"
-        style={{
-          backgroundColor: 'var(--surface)',
-          border: '2px solid var(--primary)',
-          color: 'var(--primary)',
-        }}
-      >
-        {isPlaying ? 'Playing...' : 'Play Sound'}
-      </button>
+      {audioEnabled && (
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={handlePlaySound}
+            disabled={isPlaying}
+            className="flex h-12 w-12 items-center justify-center rounded-full transition-colors cursor-pointer active:scale-95 disabled:opacity-50"
+            style={{ backgroundColor: 'var(--primary)', color: '#FFFFFF' }}
+            title="Play"
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0014 8.5v7a4.49 4.49 0 002.5-3.5zM14 3.23v2.06a6.51 6.51 0 010 13.42v2.06A8.51 8.51 0 0014 3.23z" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            onClick={handlePlaySlow}
+            disabled={isPlaying}
+            className="flex h-12 items-center gap-1 px-3 rounded-full transition-colors cursor-pointer active:scale-95 disabled:opacity-50"
+            style={{ backgroundColor: 'var(--surface)', border: '2px solid var(--border)', color: 'var(--text-muted)' }}
+            title="Play slow"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M3 9v6h4l5 5V4L7 9H3z" />
+            </svg>
+            <span className="text-xs font-bold">&frac12;</span>
+          </button>
+        </div>
+      )}
 
     </div>
   );

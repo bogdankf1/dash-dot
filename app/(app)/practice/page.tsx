@@ -129,45 +129,51 @@ export default function PracticePage() {
         </p>
 
         {/* Mode selector */}
-        <div className="flex gap-2">
-          {[
-            { value: 'tap' as PracticeMode, label: 'Tap' },
-            { value: 'listen' as PracticeMode, label: 'Listen' },
-            { value: 'identify' as PracticeMode, label: 'Identify' },
-          ].map((m) => (
-            <button
-              key={m.value}
-              onClick={() => setMode(m.value)}
-              className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                mode === m.value
-                  ? 'bg-[var(--primary)] text-white'
-                  : 'bg-[var(--surface)] text-[var(--text-muted)] ring-1 ring-[var(--border)]'
-              }`}
-            >
-              {m.label}
-            </button>
-          ))}
+        <div>
+          <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">Mode</p>
+          <div className="flex gap-2">
+            {[
+              { value: 'tap' as PracticeMode, label: 'Tap' },
+              { value: 'listen' as PracticeMode, label: 'Listen' },
+              { value: 'identify' as PracticeMode, label: 'Identify' },
+            ].map((m) => (
+              <button
+                key={m.value}
+                onClick={() => setMode(m.value)}
+                className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                  mode === m.value
+                    ? 'bg-[var(--primary)] text-white'
+                    : 'bg-[var(--surface)] text-[var(--text-muted)] ring-1 ring-[var(--border)]'
+                }`}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Category tabs */}
-        <div className="flex gap-2">
-          {([
-            { value: 'letters' as SymbolCategory, label: 'Letters' },
-            { value: 'numbers' as SymbolCategory, label: 'Numbers' },
-            { value: 'punctuation' as SymbolCategory, label: 'Punctuation' },
-          ]).map((c) => (
-            <button
-              key={c.value}
-              onClick={() => setCategory(c.value)}
-              className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                category === c.value
-                  ? 'bg-[var(--primary)] text-white'
-                  : 'bg-[var(--surface)] text-[var(--text-muted)] ring-1 ring-[var(--border)]'
-              }`}
-            >
-              {c.label}
-            </button>
-          ))}
+        <div>
+          <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">Category</p>
+          <div className="flex gap-2">
+            {([
+              { value: 'letters' as SymbolCategory, label: 'Letters' },
+              { value: 'numbers' as SymbolCategory, label: 'Numbers' },
+              { value: 'punctuation' as SymbolCategory, label: 'Punctuation' },
+            ]).map((c) => (
+              <button
+                key={c.value}
+                onClick={() => setCategory(c.value)}
+                className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                  category === c.value
+                    ? 'text-[var(--primary)] ring-2 ring-[var(--primary)] bg-transparent'
+                    : 'bg-[var(--surface)] text-[var(--text-muted)] ring-1 ring-[var(--border)]'
+                }`}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Symbol selector */}
@@ -236,7 +242,10 @@ export default function PracticePage() {
           disabled={selectedSymbols.size < 2}
           className="w-full rounded-xl bg-[var(--primary)] px-6 py-4 font-medium text-white transition-colors hover:bg-[var(--primary-hover)] disabled:opacity-50"
         >
-          Start Practice ({selectedSymbols.size} letters)
+          Start Practice ({(() => {
+            const currentSymbols = category === 'letters' ? allLetters : category === 'numbers' ? allNumbers : allPunctuation;
+            return currentSymbols.filter((s) => selectedSymbols.has(s)).length;
+          })()} {category})
         </button>
       </div>
     );

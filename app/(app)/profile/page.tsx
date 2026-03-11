@@ -3,23 +3,41 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import type { UserProfile, LessonHistory } from '@/types';
+import type { UserProfile, LessonHistory, LetterProgress } from '@/types';
 
-const BADGES = [
-  { id: 'first-lesson', label: 'First Lesson', icon: '🎓', check: (h: LessonHistory[]) => h.length >= 1 },
-  { id: 'five-lessons', label: '5 Lessons', icon: '📚', check: (h: LessonHistory[]) => h.length >= 5 },
-  { id: 'ten-lessons', label: '10 Lessons', icon: '🏆', check: (h: LessonHistory[]) => h.length >= 10 },
-  { id: 'streak-3', label: '3-Day Streak', icon: '🔥', check: (_h: LessonHistory[], s: number) => s >= 3 },
-  { id: 'streak-7', label: '7-Day Streak', icon: '💪', check: (_h: LessonHistory[], s: number) => s >= 7 },
-  { id: 'xp-500', label: '500 XP', icon: '⚡', check: (_h: LessonHistory[], _s: number, xp: number) => xp >= 500 },
-  { id: 'xp-1000', label: '1000 XP', icon: '💎', check: (_h: LessonHistory[], _s: number, xp: number) => xp >= 1000 },
-  { id: 'perfect', label: 'Perfect Lesson', icon: '💯', check: (h: LessonHistory[]) => h.some((l) => l.accuracy >= 1) },
+type BadgeCheck = (h: LessonHistory[], s: number, xp: number, lp: LetterProgress[]) => boolean;
+
+const BADGES: { id: string; label: string; icon: string; check: BadgeCheck }[] = [
+  { id: 'first-lesson', label: 'First Lesson', icon: '🎓', check: (h) => h.length >= 1 },
+  { id: 'five-lessons', label: '5 Lessons', icon: '📚', check: (h) => h.length >= 5 },
+  { id: 'ten-lessons', label: '10 Lessons', icon: '🏆', check: (h) => h.length >= 10 },
+  { id: 'twenty-lessons', label: '20 Lessons', icon: '📖', check: (h) => h.length >= 20 },
+  { id: 'fifty-lessons', label: '50 Lessons', icon: '🎖️', check: (h) => h.length >= 50 },
+  { id: 'streak-3', label: '3-Day Streak', icon: '🔥', check: (_h, s) => s >= 3 },
+  { id: 'streak-7', label: '7-Day Streak', icon: '💪', check: (_h, s) => s >= 7 },
+  { id: 'streak-14', label: '14-Day Streak', icon: '⚡', check: (_h, s) => s >= 14 },
+  { id: 'streak-30', label: '30-Day Streak', icon: '🌟', check: (_h, s) => s >= 30 },
+  { id: 'xp-500', label: '500 XP', icon: '✨', check: (_h, _s, xp) => xp >= 500 },
+  { id: 'xp-1000', label: '1000 XP', icon: '💎', check: (_h, _s, xp) => xp >= 1000 },
+  { id: 'xp-2500', label: '2500 XP', icon: '👑', check: (_h, _s, xp) => xp >= 2500 },
+  { id: 'xp-5000', label: '5000 XP', icon: '🏅', check: (_h, _s, xp) => xp >= 5000 },
+  { id: 'perfect', label: 'Perfect Lesson', icon: '💯', check: (h) => h.some((l) => l.accuracy >= 1) },
+  { id: 'triple-perfect', label: '3 Perfect Lessons', icon: '🎯', check: (h) => h.filter((l) => l.accuracy >= 1).length >= 3 },
+  { id: 'all-letters', label: 'All Letters Mastered', icon: '🔤', check: (_h, _s, _xp, lp) => {
+    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+    return letters.every((l) => lp.some((p) => p.symbol === l && p.mastery_level >= 3));
+  }},
+  { id: 'all-numbers', label: 'All Numbers Mastered', icon: '🔢', check: (_h, _s, _xp, lp) => {
+    const numbers = '0123456789'.split('');
+    return numbers.every((n) => lp.some((p) => p.symbol === n && p.mastery_level >= 3));
+  }},
 ];
 
 export default function ProfilePage() {
   const router = useRouter();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [history, setHistory] = useState<LessonHistory[]>([]);
+  const [letterProgress, setLetterProgress] = useState<LetterProgress[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -35,6 +53,7 @@ export default function ProfilePage() {
       const progressRes = await fetch('/api/progress');
       const progressData = await progressRes.json();
       setHistory(progressData.lessonHistory || []);
+      setLetterProgress(progressData.letterProgress || []);
       setLoading(false);
     }
     loadData();
@@ -52,7 +71,7 @@ export default function ProfilePage() {
   if (!profile) return null;
 
   const earnedBadges = BADGES.filter((b) =>
-    b.check(history, profile.streak, profile.xp)
+    b.check(history, profile.streak, profile.xp, letterProgress)
   );
 
   // Build activity heatmap for last 30 days

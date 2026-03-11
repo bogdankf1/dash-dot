@@ -6,6 +6,8 @@ const WORD_LETTER_GAP = 720; // 3x LETTER_GAP for inter-letter gap in words
 const FREQUENCY = 600;
 
 let audioContext: AudioContext | null = null;
+let activeTapGain: GainNode | null = null;
+let activeTapOsc: OscillatorNode | null = null;
 
 function getAudioContext(): AudioContext {
   if (!audioContext) {
@@ -17,11 +19,26 @@ function getAudioContext(): AudioContext {
   return audioContext;
 }
 
+function stopActiveTap() {
+  if (activeTapGain) {
+    try { activeTapGain.gain.cancelScheduledValues(0); activeTapGain.gain.setValueAtTime(0, 0); } catch {}
+    activeTapGain = null;
+  }
+  if (activeTapOsc) {
+    try { activeTapOsc.stop(); } catch {}
+    activeTapOsc = null;
+  }
+}
+
 export async function playBeep(
   duration: number,
-  frequency: number = FREQUENCY
+  frequency: number = FREQUENCY,
+  tap: boolean = false
 ): Promise<void> {
   const ctx = getAudioContext();
+
+  if (tap) stopActiveTap();
+
   const oscillator = ctx.createOscillator();
   const gainNode = ctx.createGain();
 
@@ -35,6 +52,11 @@ export async function playBeep(
 
   oscillator.connect(gainNode);
   gainNode.connect(ctx.destination);
+
+  if (tap) {
+    activeTapGain = gainNode;
+    activeTapOsc = oscillator;
+  }
 
   oscillator.start(ctx.currentTime);
   oscillator.stop(ctx.currentTime + duration / 1000);

@@ -109,12 +109,13 @@ export default function ChapterPage() {
       <button
         type="button"
         onClick={() => router.push('/dashboard')}
-        className="mb-4 text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+        className="mb-4 flex items-center gap-1 text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)]"
       >
-        &larr; Back to Dashboard
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="15 18 9 12 15 6" />
+        </svg>
+        <span className="font-medium text-[var(--text-primary)]">{chapter.title}</span>
       </button>
-
-      <h1 className="mb-2 text-2xl font-bold text-[var(--text-primary)]">{chapter.title}</h1>
       <p className="mb-6 text-[var(--text-muted)]">
         Symbols: {chapter.symbols.join(', ')}
       </p>

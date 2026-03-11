@@ -12,6 +12,8 @@ export default function SettingsPage() {
   const [inputMode, setInputMode] = useState<'single' | 'buttons' | 'both'>('both');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetting, setResetting] = useState(false);
 
   useEffect(() => {
     async function loadSettings() {
@@ -84,6 +86,25 @@ export default function SettingsPage() {
         </select>
       </div>
 
+      {/* Input Mode */}
+      <div className="rounded-xl bg-[var(--surface)] p-4 ring-1 ring-[var(--border)]">
+        <label className="mb-2 block text-sm font-semibold text-[var(--text-primary)]">
+          Input Mode
+        </label>
+        <p className="mb-3 text-xs text-[var(--text-muted)]">
+          How you input dots and dashes during exercises
+        </p>
+        <select
+          value={inputMode}
+          onChange={(e) => setInputMode(e.target.value as 'single' | 'buttons' | 'both')}
+          className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--text-primary)]"
+        >
+          <option value="both">Both — Tap area + buttons (Recommended)</option>
+          <option value="buttons">Two Buttons — Separate dot and dash</option>
+          <option value="single">Single Key — Tap/hold spacebar or tap area</option>
+        </select>
+      </div>
+
       {/* Audio */}
       <div className="rounded-xl bg-[var(--surface)] p-4 ring-1 ring-[var(--border)]">
         <div className="flex items-center justify-between">
@@ -110,50 +131,6 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* Input Mode */}
-      <div className="rounded-xl bg-[var(--surface)] p-4 ring-1 ring-[var(--border)]">
-        <label className="mb-3 block text-sm font-semibold text-[var(--text-primary)]">
-          Input Mode
-        </label>
-        <div className="space-y-2">
-          {[
-            { value: 'single' as const, label: 'Single Key', desc: 'Tap/hold spacebar or tap area' },
-            { value: 'buttons' as const, label: 'Two Buttons', desc: 'Separate dot and dash buttons' },
-            { value: 'both' as const, label: 'Both', desc: 'Tap area + buttons (Recommended)' },
-          ].map((option) => (
-            <button
-              key={option.value}
-              onClick={() => setInputMode(option.value)}
-              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors ${
-                inputMode === option.value
-                  ? 'bg-indigo-50 ring-1 ring-[var(--primary)]'
-                  : 'hover:bg-[var(--background)]'
-              }`}
-            >
-              <div
-                className={`flex h-5 w-5 items-center justify-center rounded-full border-2 ${
-                  inputMode === option.value
-                    ? 'border-[var(--primary)]'
-                    : 'border-[var(--border)]'
-                }`}
-              >
-                {inputMode === option.value && (
-                  <div className="h-2.5 w-2.5 rounded-full bg-[var(--primary)]" />
-                )}
-              </div>
-              <div>
-                <div className="text-sm font-medium text-[var(--text-primary)]">
-                  {option.label}
-                </div>
-                <div className="text-xs text-[var(--text-muted)]">
-                  {option.desc}
-                </div>
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
-
       {/* Save */}
       <button
         onClick={saveSettings}
@@ -162,6 +139,20 @@ export default function SettingsPage() {
       >
         {saving ? 'Saving...' : 'Save Settings'}
       </button>
+
+      {/* Danger Zone */}
+      <div className="rounded-xl bg-[var(--surface)] p-4 ring-1 ring-red-200">
+        <h3 className="mb-1 text-sm font-semibold text-[var(--error)]">Danger Zone</h3>
+        <p className="mb-3 text-xs text-[var(--text-muted)]">
+          This will permanently delete all your progress, XP, and streak data.
+        </p>
+        <button
+          onClick={() => setShowResetModal(true)}
+          className="w-full rounded-xl bg-red-50 px-6 py-3 text-sm font-medium text-[var(--error)] ring-1 ring-red-200 transition-colors hover:bg-red-100"
+        >
+          Reset All Progress
+        </button>
+      </div>
 
       {/* Sign Out */}
       <button
@@ -174,6 +165,40 @@ export default function SettingsPage() {
       >
         Sign Out
       </button>
+
+      {/* Reset Confirmation Modal */}
+      {showResetModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-sm rounded-2xl bg-[var(--background)] p-6 shadow-xl">
+            <h3 className="mb-2 text-lg font-bold text-[var(--text-primary)]">Reset All Progress?</h3>
+            <p className="mb-6 text-sm text-[var(--text-muted)]">
+              This will permanently delete all your lesson history, letter progress, XP, and streak. This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowResetModal(false)}
+                disabled={resetting}
+                className="flex-1 rounded-xl bg-[var(--surface)] px-4 py-3 text-sm font-medium text-[var(--text-primary)] ring-1 ring-[var(--border)]"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  setResetting(true);
+                  await fetch('/api/progress', { method: 'DELETE' });
+                  setShowResetModal(false);
+                  setResetting(false);
+                  router.push('/dashboard');
+                }}
+                disabled={resetting}
+                className="flex-1 rounded-xl bg-[var(--error)] px-4 py-3 text-sm font-medium text-white disabled:opacity-50"
+              >
+                {resetting ? 'Resetting...' : 'Confirm Reset'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
