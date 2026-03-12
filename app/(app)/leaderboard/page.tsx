@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
 interface LeaderboardEntry {
@@ -12,6 +13,7 @@ interface LeaderboardEntry {
 }
 
 export default function LeaderboardPage() {
+  const router = useRouter();
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -54,9 +56,9 @@ export default function LeaderboardPage() {
       {/* Podium — top 3 */}
       {entries.length >= 3 && (
         <div className="flex items-end justify-center gap-3">
-          <PodiumCard entry={entries[1]} rank={2} />
-          <PodiumCard entry={entries[0]} rank={1} />
-          <PodiumCard entry={entries[2]} rank={3} />
+          <PodiumCard entry={entries[1]} rank={2} onNavigate={() => router.push(`/profile/${entries[1].id}`)} />
+          <PodiumCard entry={entries[0]} rank={1} onNavigate={() => router.push(`/profile/${entries[0].id}`)} />
+          <PodiumCard entry={entries[2]} rank={3} onNavigate={() => router.push(`/profile/${entries[2].id}`)} />
         </div>
       )}
 
@@ -74,7 +76,8 @@ export default function LeaderboardPage() {
         {entries.map((entry, i) => (
           <div
             key={entry.id}
-            className={`flex items-center gap-3 px-4 py-3 ${
+            onClick={() => router.push(entry.id === currentUserId ? '/profile' : `/profile/${entry.id}`)}
+            className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors hover:bg-[var(--background)] ${
               i !== entries.length - 1 ? 'border-b border-[var(--border)]' : ''
             } ${entry.id === currentUserId ? 'bg-indigo-50/50' : ''}`}
           >
@@ -151,14 +154,14 @@ function Avatar({ username, avatarUrl }: { username: string | null; avatarUrl: s
   );
 }
 
-function PodiumCard({ entry, rank }: { entry: LeaderboardEntry; rank: 1 | 2 | 3 }) {
+function PodiumCard({ entry, rank, onNavigate }: { entry: LeaderboardEntry; rank: 1 | 2 | 3; onNavigate: () => void }) {
   const heights = { 1: 'h-28', 2: 'h-22', 3: 'h-18' };
   const medals = { 1: '🥇', 2: '🥈', 3: '🥉' };
   const sizes = { 1: 'w-14 h-14 text-base', 2: 'w-11 h-11 text-sm', 3: 'w-11 h-11 text-sm' };
   const initials = entry.username ? entry.username.slice(0, 2).toUpperCase() : '?';
 
   return (
-    <div className={`flex flex-col items-center gap-1.5 ${rank === 1 ? 'order-2' : rank === 2 ? 'order-1' : 'order-3'}`}>
+    <div onClick={onNavigate} className={`flex flex-col items-center gap-1.5 cursor-pointer ${rank === 1 ? 'order-2' : rank === 2 ? 'order-1' : 'order-3'}`}>
       <div className="relative">
         {entry.avatar_url ? (
           <img
