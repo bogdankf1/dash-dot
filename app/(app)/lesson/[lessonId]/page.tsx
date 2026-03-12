@@ -32,6 +32,7 @@ export default function LessonPage() {
   const [isComplete, setIsComplete] = useState(false);
   const [isGameOver, setIsGameOver] = useState(false);
   const [xpEarned, setXpEarned] = useState(0);
+  const [streakInfo, setStreakInfo] = useState<{ continued: boolean; newStreak: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [skipAudio, setSkipAudio] = useState(false);
@@ -223,14 +224,27 @@ export default function LessonPage() {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('streak')
+        .select('streak, last_activity_date')
         .eq('id', user.id)
         .single();
 
       const streak = profile?.streak || 0;
+      const lastActivity = profile?.last_activity_date;
       const accuracy = totalAnswered > 0 ? correctCount / totalAnswered : 0;
       const xp = calculateXP(correctCount, totalAnswered, streak);
       if (!cancelled) setXpEarned(xp);
+
+      // Check if streak will be continued (new day, last activity was yesterday)
+      const today = new Date();
+      const localDateStr = today.toLocaleDateString('sv-SE');
+      if (!cancelled && lastActivity && lastActivity !== localDateStr) {
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = yesterday.toLocaleDateString('sv-SE');
+        if (lastActivity === yesterdayStr) {
+          setStreakInfo({ continued: true, newStreak: streak + 1 });
+        }
+      }
 
       try {
         await fetch('/api/progress', {
@@ -280,13 +294,13 @@ export default function LessonPage() {
           <div className="flex gap-3">
             <button
               onClick={() => router.push('/dashboard')}
-              className="flex-1 rounded-xl bg-[var(--surface)] px-6 py-3 font-medium text-[var(--text-primary)] ring-1 ring-[var(--border)]"
+              className="flex-1 cursor-pointer rounded-xl bg-[var(--surface)] px-6 py-3 font-medium text-[var(--text-primary)] ring-1 ring-[var(--border)] transition-colors active:scale-95"
             >
               Back
             </button>
             <button
               onClick={loadLesson}
-              className="flex-1 rounded-xl bg-[var(--primary)] px-6 py-3 font-medium text-white"
+              className="flex-1 cursor-pointer rounded-xl bg-[var(--primary)] px-6 py-3 font-medium text-white transition-colors active:scale-95"
             >
               Try Again
             </button>
@@ -310,13 +324,13 @@ export default function LessonPage() {
           <div className="flex gap-3">
             <button
               onClick={() => router.push('/dashboard')}
-              className="flex-1 rounded-xl bg-[var(--surface)] px-6 py-3 font-medium text-[var(--text-primary)] ring-1 ring-[var(--border)]"
+              className="flex-1 cursor-pointer rounded-xl bg-[var(--surface)] px-6 py-3 font-medium text-[var(--text-primary)] ring-1 ring-[var(--border)] transition-colors active:scale-95"
             >
               Back
             </button>
             <button
               onClick={() => window.location.reload()}
-              className="flex-1 rounded-xl bg-[var(--primary)] px-6 py-3 font-medium text-white"
+              className="flex-1 cursor-pointer rounded-xl bg-[var(--primary)] px-6 py-3 font-medium text-white transition-colors active:scale-95"
             >
               Retry
             </button>
@@ -357,6 +371,18 @@ export default function LessonPage() {
             </div>
           </div>
 
+          {streakInfo?.continued && (
+            <div className="mb-6 rounded-xl bg-amber-50 p-4 ring-1 ring-amber-200">
+              <div className="text-3xl mb-1">🔥</div>
+              <p className="text-sm font-bold text-amber-700">
+                {streakInfo.newStreak}-day streak!
+              </p>
+              <p className="text-xs text-amber-600">
+                Keep it up — come back tomorrow!
+              </p>
+            </div>
+          )}
+
           {lessonMeta && (
             <div className="mb-6 text-sm text-[var(--text-muted)]">
               {lessonMeta.isWordLesson ? 'Words practiced' : 'Letters practiced'}:{' '}
@@ -372,7 +398,7 @@ export default function LessonPage() {
             onClick={() => router.push(
               lessonMeta?.hasMoreLessons ? `/learn/${lessonMeta.chapterId}` : '/dashboard'
             )}
-            className="w-full rounded-xl bg-[var(--primary)] px-6 py-4 font-medium text-white transition-colors hover:bg-[var(--primary-hover)]"
+            className="w-full cursor-pointer rounded-xl bg-[var(--primary)] px-6 py-4 font-medium text-white transition-colors hover:bg-[var(--primary-hover)] active:scale-95"
           >
             Continue
           </button>
@@ -388,7 +414,7 @@ export default function LessonPage() {
           <button
             type="button"
             onClick={() => setShowExitModal(true)}
-            className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg text-[var(--text-muted)] transition-colors hover:bg-[var(--surface)] hover:text-[var(--text-primary)]"
+            className="flex h-8 w-8 flex-shrink-0 cursor-pointer items-center justify-center rounded-lg text-[var(--text-muted)] transition-colors hover:bg-[var(--surface)] hover:text-[var(--text-primary)] active:scale-90"
             title="Exit lesson"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -409,7 +435,7 @@ export default function LessonPage() {
             <button
               type="button"
               onClick={() => setSkipAudio(true)}
-              className="rounded-lg px-3 py-1.5 text-xs font-medium text-[var(--text-muted)] ring-1 ring-[var(--border)] transition-colors"
+              className="cursor-pointer rounded-lg px-3 py-1.5 text-xs font-medium text-[var(--text-muted)] ring-1 ring-[var(--border)] transition-colors active:scale-95"
             >
               Can&apos;t listen now? Skip audio
             </button>
@@ -441,14 +467,14 @@ export default function LessonPage() {
               <button
                 type="button"
                 onClick={() => setShowExitModal(false)}
-                className="flex-1 rounded-xl bg-[var(--primary)] px-4 py-3 text-sm font-medium text-white"
+                className="flex-1 cursor-pointer rounded-xl bg-[var(--primary)] px-4 py-3 text-sm font-medium text-white transition-colors active:scale-95"
               >
                 Keep Going
               </button>
               <button
                 type="button"
                 onClick={() => router.push(lessonMeta?.chapterId ? `/learn/${lessonMeta.chapterId}` : '/dashboard')}
-                className="flex-1 rounded-xl bg-[var(--surface)] px-4 py-3 text-sm font-medium text-[var(--error)] ring-1 ring-[var(--border)]"
+                className="flex-1 cursor-pointer rounded-xl bg-[var(--surface)] px-4 py-3 text-sm font-medium text-[var(--error)] ring-1 ring-[var(--border)] transition-colors active:scale-95"
               >
                 Quit
               </button>

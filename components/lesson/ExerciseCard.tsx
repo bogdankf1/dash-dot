@@ -18,7 +18,7 @@ interface ExerciseCardProps {
 }
 
 type Feedback = 'correct' | 'incorrect' | null;
-type ButtonState = 'check' | 'continue' | 'retry';
+type ButtonState = 'check' | 'continue';
 
 function patternToReadable(pattern: string): string {
   return pattern
@@ -35,9 +35,7 @@ export default function ExerciseCard({
   mnemonicGuide,
 }: ExerciseCardProps) {
   const [feedback, setFeedback] = useState<Feedback>(null);
-  const [retries, setRetries] = useState(0);
   const [inputDisabled, setInputDisabled] = useState(false);
-  const [showAnswer, setShowAnswer] = useState(false);
   const [buttonState, setButtonState] = useState<ButtonState>('check');
 
   // Morse pattern state (for tap-assisted, tap-recall, word-encode)
@@ -71,8 +69,6 @@ export default function ExerciseCard({
     } catch {}
   }, []);
 
-  const maxRetries = 2;
-
   const correctPattern = MORSE_MAP[exercise.symbol.toUpperCase()] || MORSE_MAP[exercise.symbol];
 
   const markCorrect = useCallback(() => {
@@ -83,19 +79,11 @@ export default function ExerciseCard({
   }, []);
 
   const markIncorrect = useCallback(() => {
-    const newRetries = retries + 1;
-    setRetries(newRetries);
     setFeedback('incorrect');
-
-    if (newRetries >= maxRetries) {
-      setInputDisabled(true);
-      setShowAnswer(true);
-      setLastCorrect(false);
-      setButtonState('continue');
-    } else {
-      setButtonState('retry');
-    }
-  }, [retries]);
+    setInputDisabled(true);
+    setLastCorrect(false);
+    setButtonState('continue');
+  }, []);
 
   // --- Check logic per exercise type ---
   const handleCheck = useCallback(() => {
@@ -138,14 +126,6 @@ export default function ExerciseCard({
     }
   }, [exercise, morsePattern, textInput, correctPattern, currentLetterIndex, markCorrect, markIncorrect]);
 
-  // --- Retry logic ---
-  const handleRetry = useCallback(() => {
-    setMorsePattern('');
-    setTextInput('');
-    setFeedback(null);
-    setButtonState('check');
-  }, []);
-
   // --- Identify is the exception: clicking a choice IS the check ---
   const handleIdentifyChoice = useCallback(
     (choice: string) => {
@@ -184,13 +164,11 @@ export default function ExerciseCard({
         handleCheck();
       } else if (effectiveButtonState === 'continue') {
         onAnswer(exercise.type === 'introduce' ? true : lastCorrect);
-      } else if (effectiveButtonState === 'retry') {
-        handleRetry();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [effectiveButtonState, isCheckEnabled, handleCheck, handleRetry, onAnswer, exercise.type, lastCorrect]);
+  }, [effectiveButtonState, isCheckEnabled, handleCheck, onAnswer, exercise.type, lastCorrect]);
 
   const feedbackBg =
     feedback === 'correct'
@@ -213,33 +191,12 @@ export default function ExerciseCard({
         </p>
       </div>
 
-      {feedback && (
-        <div className="mb-4 text-center">
-          {feedback === 'correct' && (
-            <p className="text-lg font-bold" style={{ color: 'var(--success)' }}>
-              Correct!
+      {exercise.type !== 'introduce' && (
+        <div className="mb-4 text-center h-7">
+          {feedback && (
+            <p className="text-lg font-bold" style={{ color: feedback === 'correct' ? 'var(--success)' : 'var(--error)' }}>
+              {feedback === 'correct' ? 'Correct!' : 'Incorrect'}
             </p>
-          )}
-          {feedback === 'incorrect' && !showAnswer && (
-            <p className="text-lg font-bold" style={{ color: 'var(--error)' }}>
-              Try Again
-            </p>
-          )}
-          {feedback === 'incorrect' && showAnswer && (
-            <div className="space-y-2">
-              <p className="text-lg font-bold" style={{ color: 'var(--error)' }}>
-                The answer was:
-              </p>
-              {exercise.type === 'word-listen' || exercise.type === 'word-spell' || exercise.type === 'word-encode' ? (
-                <p className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
-                  {exercise.word}
-                </p>
-              ) : (
-                <div className="flex items-center justify-center">
-                  <MorseDisplay pattern={correctPattern} size="md" />
-                </div>
-              )}
-            </div>
           )}
         </div>
       )}
@@ -270,9 +227,12 @@ export default function ExerciseCard({
           >
             {patternToReadable(correctPattern)}
           </p>
-          {!inputDisabled && (
-            <MorseInput onChange={setMorsePattern} />
-          )}
+          <MorseInput
+            onChange={setMorsePattern}
+            disabled={inputDisabled}
+            feedback={feedback}
+            frozenPattern={morsePattern}
+          />
         </div>
       )}
 
@@ -287,9 +247,13 @@ export default function ExerciseCard({
           >
             {exercise.symbol}
           </div>
-          {!inputDisabled && (
-            <MorseInput onChange={setMorsePattern} />
-          )}
+          <MorseInput
+            onChange={setMorsePattern}
+            disabled={inputDisabled}
+            feedback={feedback}
+            frozenPattern={morsePattern}
+            correctPattern={feedback === 'incorrect' ? correctPattern : undefined}
+          />
         </div>
       )}
 
@@ -366,7 +330,7 @@ export default function ExerciseCard({
             {patternToReadable(correctPattern)}
           </p>
           <MorseDisplay pattern={correctPattern} size="md" />
-          {!inputDisabled && (
+          {!inputDisabled ? (
             <input
               type="text"
               value={textInput}
@@ -383,6 +347,23 @@ export default function ExerciseCard({
               onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--border)')}
               autoFocus
             />
+          ) : (
+            <div className="flex items-center gap-3">
+              {feedback === 'incorrect' && (
+                <div
+                  className="w-14 h-14 rounded-xl flex items-center justify-center text-2xl font-bold"
+                  style={{ backgroundColor: '#fee2e2', border: '2px solid #f87171', color: '#991b1b' }}
+                >
+                  {textInput.toUpperCase() || '?'}
+                </div>
+              )}
+              <div
+                className="w-14 h-14 rounded-xl flex items-center justify-center text-2xl font-bold"
+                style={{ backgroundColor: '#dcfce7', border: '2px solid #4ade80', color: '#166534' }}
+              >
+                {exercise.symbol}
+              </div>
+            </div>
           )}
         </div>
       )}
@@ -391,7 +372,7 @@ export default function ExerciseCard({
         <WordListenBody
           word={exercise.word}
           inputDisabled={inputDisabled}
-          showAnswer={showAnswer}
+          feedback={feedback}
           textInput={textInput}
           onTextChange={setTextInput}
           showTranscript={showTranscript}
@@ -405,16 +386,17 @@ export default function ExerciseCard({
           word={exercise.word}
           currentLetterIndex={currentLetterIndex}
           completedPatterns={completedPatterns}
-          showAnswer={showAnswer}
+          feedback={feedback}
           inputDisabled={inputDisabled}
           onMorseChange={setMorsePattern}
+          morsePattern={morsePattern}
         />
       )}
 
       {exercise.type === 'word-spell' && exercise.word && (
         <WordSpellBody
           word={exercise.word}
-          showAnswer={showAnswer}
+          feedback={feedback}
           inputDisabled={inputDisabled}
           textInput={textInput}
           onTextChange={setTextInput}
@@ -446,17 +428,7 @@ export default function ExerciseCard({
               backgroundColor: exercise.type === 'introduce' || lastCorrect ? 'var(--success)' : 'var(--primary)',
             }}
           >
-            Continue
-          </button>
-        )}
-        {effectiveButtonState === 'retry' && (
-          <button
-            type="button"
-            onClick={handleRetry}
-            className="w-full h-14 rounded-xl font-semibold text-white text-lg transition-colors cursor-pointer active:scale-95"
-            style={{ backgroundColor: 'var(--primary)' }}
-          >
-            Retry
+            {exercise.type === 'introduce' || lastCorrect ? 'Continue' : 'Got It'}
           </button>
         )}
       </div>
@@ -499,6 +471,7 @@ function SpeakerButtons({ onPlay, onPlaySlow }: { onPlay: () => void; onPlaySlow
 function WordListenBody({
   word,
   inputDisabled,
+  feedback,
   textInput,
   onTextChange,
   showTranscript,
@@ -507,7 +480,7 @@ function WordListenBody({
 }: {
   word: string;
   inputDisabled: boolean;
-  showAnswer: boolean;
+  feedback: Feedback;
   textInput: string;
   onTextChange: (value: string) => void;
   showTranscript: boolean;
@@ -522,22 +495,24 @@ function WordListenBody({
         Listen to the word and type it:
       </p>
       {audioEnabled && <SpeakerButtons onPlay={() => playMorseWord(word)} onPlaySlow={() => playMorseWord(word, 0.5)} />}
-      <button
-        type="button"
-        onClick={onToggleTranscript}
-        className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
-        style={{ color: 'var(--text-muted)', border: '1px solid var(--border)' }}
-      >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          {showTranscript ? (
-            <><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" /><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" /><line x1="1" y1="1" x2="23" y2="23" /></>
-          ) : (
-            <><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></>
-          )}
-        </svg>
-        {showTranscript ? 'Hide Transcript' : 'Show Transcript'}
-      </button>
-      {showTranscript && (
+      {!inputDisabled && (
+        <button
+          type="button"
+          onClick={onToggleTranscript}
+          className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
+          style={{ color: 'var(--text-muted)', border: '1px solid var(--border)' }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            {showTranscript ? (
+              <><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" /><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" /><line x1="1" y1="1" x2="23" y2="23" /></>
+            ) : (
+              <><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></>
+            )}
+          </svg>
+          {showTranscript ? 'Hide Transcript' : 'Show Transcript'}
+        </button>
+      )}
+      {showTranscript && !inputDisabled && (
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap justify-center">
           {letters.map((letter, i) => {
             const pattern = MORSE_MAP[letter] || '';
@@ -549,7 +524,7 @@ function WordListenBody({
           })}
         </div>
       )}
-      {!inputDisabled && (
+      {!inputDisabled ? (
         <input
           type="text"
           value={textInput}
@@ -566,6 +541,23 @@ function WordListenBody({
           onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--border)')}
           autoFocus
         />
+      ) : (
+        <div className="flex flex-col items-center gap-3">
+          {feedback === 'incorrect' && (
+            <div
+              className="rounded-xl px-4 py-2 text-center text-lg font-bold"
+              style={{ backgroundColor: '#fee2e2', border: '2px solid #f87171', color: '#991b1b' }}
+            >
+              {textInput.toUpperCase() || '?'}
+            </div>
+          )}
+          <div
+            className="rounded-xl px-4 py-2 text-center text-lg font-bold"
+            style={{ backgroundColor: '#dcfce7', border: '2px solid #4ade80', color: '#166534' }}
+          >
+            {word.toUpperCase()}
+          </div>
+        </div>
       )}
     </div>
   );
@@ -575,16 +567,18 @@ function WordEncodeBody({
   word,
   currentLetterIndex,
   completedPatterns,
-  showAnswer,
+  feedback,
   inputDisabled,
   onMorseChange,
+  morsePattern,
 }: {
   word: string;
   currentLetterIndex: number;
   completedPatterns: string[];
-  showAnswer: boolean;
+  feedback: Feedback;
   inputDisabled: boolean;
   onMorseChange: (pattern: string) => void;
+  morsePattern: string;
 }) {
   const letters = word.toUpperCase().split('');
   const currentLetter = letters[currentLetterIndex];
@@ -596,18 +590,22 @@ function WordEncodeBody({
         Tap the Morse code for each letter:
       </p>
       <div className="flex gap-2">
-        {letters.map((letter, i) => (
-          <span
-            key={i}
-            className="text-3xl font-bold px-2 py-1 rounded"
-            style={{
-              color: i === currentLetterIndex ? 'var(--primary)' : i < currentLetterIndex ? 'var(--success)' : 'var(--text-muted)',
-              backgroundColor: i === currentLetterIndex ? 'var(--primary-bg, rgba(99,102,241,0.1))' : 'transparent',
-            }}
-          >
-            {letter}
-          </span>
-        ))}
+        {letters.map((letter, i) => {
+          const isDone = inputDisabled ? i <= currentLetterIndex : i < currentLetterIndex;
+          const isCurrent = !inputDisabled && i === currentLetterIndex;
+          return (
+            <span
+              key={i}
+              className="text-3xl font-bold px-2 py-1 rounded"
+              style={{
+                color: isCurrent ? 'var(--primary)' : isDone ? 'var(--success)' : 'var(--text-muted)',
+                backgroundColor: isCurrent ? 'var(--primary-bg, rgba(99,102,241,0.1))' : 'transparent',
+              }}
+            >
+              {letter}
+            </span>
+          );
+        })}
       </div>
       {completedPatterns.length > 0 && (
         <div className="flex items-center gap-3 flex-wrap justify-center">
@@ -622,26 +620,27 @@ function WordEncodeBody({
           ))}
         </div>
       )}
-      {showAnswer && (
-        <p className="text-lg font-mono" style={{ color: 'var(--text-muted)' }}>
-          {currentLetter} = {patternToReadable(currentPattern)}
-        </p>
-      )}
-      {!inputDisabled && (
-        <MorseInput onChange={onMorseChange} key={currentLetterIndex} />
-      )}
+      <MorseInput
+        onChange={onMorseChange}
+        key={currentLetterIndex}
+        disabled={inputDisabled}
+        feedback={feedback}
+        frozenPattern={morsePattern}
+        correctPattern={feedback === 'incorrect' ? currentPattern : undefined}
+      />
     </div>
   );
 }
 
 function WordSpellBody({
   word,
+  feedback,
   inputDisabled,
   textInput,
   onTextChange,
 }: {
   word: string;
-  showAnswer: boolean;
+  feedback: Feedback;
   inputDisabled: boolean;
   textInput: string;
   onTextChange: (value: string) => void;
@@ -663,7 +662,7 @@ function WordSpellBody({
           );
         })}
       </div>
-      {!inputDisabled && (
+      {!inputDisabled ? (
         <input
           type="text"
           value={textInput}
@@ -680,6 +679,23 @@ function WordSpellBody({
           onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--border)')}
           autoFocus
         />
+      ) : (
+        <div className="flex flex-col items-center gap-3">
+          {feedback === 'incorrect' && (
+            <div
+              className="rounded-xl px-4 py-2 text-center text-lg font-bold"
+              style={{ backgroundColor: '#fee2e2', border: '2px solid #f87171', color: '#991b1b' }}
+            >
+              {textInput.toUpperCase() || '?'}
+            </div>
+          )}
+          <div
+            className="rounded-xl px-4 py-2 text-center text-lg font-bold"
+            style={{ backgroundColor: '#dcfce7', border: '2px solid #4ade80', color: '#166534' }}
+          >
+            {word.toUpperCase()}
+          </div>
+        </div>
       )}
     </div>
   );

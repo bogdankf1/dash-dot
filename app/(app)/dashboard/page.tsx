@@ -94,7 +94,7 @@ export default function DashboardPage() {
         <button
           type="button"
           onClick={fetchData}
-          className="rounded-xl bg-[var(--primary)] px-6 py-3 font-medium text-white transition-colors hover:bg-[var(--primary-hover)]"
+          className="cursor-pointer rounded-xl bg-[var(--primary)] px-6 py-3 font-medium text-white transition-colors hover:bg-[var(--primary-hover)] active:scale-95"
         >
           Try Again
         </button>
@@ -112,7 +112,7 @@ export default function DashboardPage() {
       <button
         type="button"
         onClick={handleContinueLearning}
-        className="mb-8 w-full rounded-xl bg-[var(--primary)] px-6 py-3 text-center font-semibold text-white transition-colors hover:bg-[var(--primary-hover)]"
+        className="mb-8 w-full cursor-pointer rounded-xl bg-[var(--primary)] px-6 py-3 text-center font-semibold text-white transition-colors hover:bg-[var(--primary-hover)] active:scale-95"
       >
         Continue Learning
       </button>

@@ -18,11 +18,21 @@ function isAudioEnabled(): boolean {
 interface MorseInputProps {
   onChange: (pattern: string) => void;
   mode?: 'single' | 'buttons' | 'both';
+  disabled?: boolean;
+  feedback?: 'correct' | 'incorrect' | null;
+  /** Pattern to display when disabled (frozen state) */
+  frozenPattern?: string;
+  /** Correct pattern to show when feedback is incorrect */
+  correctPattern?: string;
 }
 
 export default function MorseInput({
   onChange,
   mode = 'both',
+  disabled = false,
+  feedback = null,
+  frozenPattern,
+  correctPattern,
 }: MorseInputProps) {
   const [pulsing, setPulsing] = useState(false);
 
@@ -37,8 +47,10 @@ export default function MorseInput({
 
   // Notify parent whenever pattern changes
   useEffect(() => {
-    onChange(currentPattern);
-  }, [currentPattern, onChange]);
+    if (!disabled) {
+      onChange(currentPattern);
+    }
+  }, [currentPattern, onChange, disabled]);
 
   const triggerPulse = () => {
     setPulsing(true);
@@ -70,42 +82,65 @@ export default function MorseInput({
   const showSingle = mode === 'single' || mode === 'both';
   const showButtons = mode === 'buttons' || mode === 'both';
 
+  // The pattern to display in the top area
+  const displayPattern = disabled ? (frozenPattern || currentPattern) : currentPattern;
+
+  // Feedback highlight styles for the pattern area
+  const feedbackBg = feedback === 'correct' ? '#dcfce7' : feedback === 'incorrect' ? '#fee2e2' : undefined;
+  const feedbackBorder = feedback === 'correct' ? '#4ade80' : feedback === 'incorrect' ? '#f87171' : undefined;
+
   return (
     <div className="flex flex-col items-center gap-4 w-full">
       <div className="min-h-[4.5rem] flex flex-col items-center justify-center">
-        {currentPattern ? (
+        {displayPattern ? (
           <div className="flex flex-col items-center gap-2">
-            <MorseDisplay pattern={currentPattern} size="sm" />
-            <button
-              type="button"
-              onClick={handleClear}
-              className="text-xs font-medium px-2 py-1 rounded-lg transition-colors cursor-pointer active:scale-95"
-              style={{
-                color: 'var(--text-muted)',
-                backgroundColor: 'var(--background)',
-                border: '1px solid var(--border)',
-              }}
+            <div
+              className="rounded-xl px-4 py-2"
+              style={feedbackBg ? {
+                backgroundColor: feedbackBg,
+                border: `2px solid ${feedbackBorder}`,
+              } : undefined}
             >
-              Clear
-            </button>
+              <MorseDisplay pattern={displayPattern} size="sm" />
+            </div>
+            {!disabled && (
+              <button
+                type="button"
+                onClick={handleClear}
+                className="text-xs font-medium px-2 py-1 rounded-lg transition-colors cursor-pointer active:scale-95"
+                style={{
+                  color: 'var(--text-muted)',
+                  backgroundColor: 'var(--background)',
+                  border: '1px solid var(--border)',
+                }}
+              >
+                Clear
+              </button>
+            )}
           </div>
         ) : (
           <div className="h-[1.5rem]" />
         )}
 
-        {isBuilding && (
+        {!disabled && isBuilding && (
           <div className="mt-2 flex gap-1">
             <span className="h-1.5 w-1.5 rounded-full bg-[var(--text-muted)] animate-bounce [animation-delay:0ms]" />
             <span className="h-1.5 w-1.5 rounded-full bg-[var(--text-muted)] animate-bounce [animation-delay:150ms]" />
             <span className="h-1.5 w-1.5 rounded-full bg-[var(--text-muted)] animate-bounce [animation-delay:300ms]" />
           </div>
         )}
+
+        {disabled && feedback === 'incorrect' && correctPattern && (
+          <div className="mt-2 rounded-xl px-4 py-2" style={{ backgroundColor: '#dcfce7', border: '2px solid #4ade80' }}>
+            <MorseDisplay pattern={correctPattern} size="sm" />
+          </div>
+        )}
       </div>
 
       {showSingle && (
         <div
-          {...wrappedTapAreaProps}
-          className={`hidden lg:flex w-full h-32 rounded-2xl items-center justify-center cursor-pointer select-none ${pulsing ? 'animate-pulse-dot' : ''}`}
+          {...(disabled ? {} : wrappedTapAreaProps)}
+          className={`hidden lg:flex w-full h-32 rounded-2xl items-center justify-center select-none ${disabled ? 'opacity-30' : 'cursor-pointer'} ${!disabled && pulsing ? 'animate-pulse-dot' : ''}`}
           style={{
             backgroundColor: 'var(--surface)',
             border: '2px dashed var(--border)',
@@ -124,11 +159,13 @@ export default function MorseInput({
         <div className="flex gap-4 w-full">
           <button
             type="button"
+            disabled={disabled}
             onClick={() => {
+              if (disabled) return;
               triggerPulse();
               dotButtonProps.onClick();
             }}
-            className="flex-1 h-20 rounded-xl text-3xl font-bold cursor-pointer transition-colors active:scale-95"
+            className={`flex-1 h-20 rounded-xl text-3xl font-bold transition-colors ${disabled ? 'opacity-30' : 'cursor-pointer active:scale-95'}`}
             style={{
               backgroundColor: 'var(--surface)',
               border: '2px solid var(--border)',
@@ -139,11 +176,13 @@ export default function MorseInput({
           </button>
           <button
             type="button"
+            disabled={disabled}
             onClick={() => {
+              if (disabled) return;
               triggerPulse();
               dashButtonProps.onClick();
             }}
-            className="flex-1 h-20 rounded-xl text-3xl font-bold cursor-pointer transition-colors active:scale-95"
+            className={`flex-1 h-20 rounded-xl text-3xl font-bold transition-colors ${disabled ? 'opacity-30' : 'cursor-pointer active:scale-95'}`}
             style={{
               backgroundColor: 'var(--surface)',
               border: '2px solid var(--border)',

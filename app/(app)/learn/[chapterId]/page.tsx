@@ -100,7 +100,7 @@ export default function ChapterPage() {
         <button
           type="button"
           onClick={fetchData}
-          className="rounded-xl bg-[var(--primary)] px-6 py-3 font-medium text-white transition-colors hover:bg-[var(--primary-hover)]"
+          className="cursor-pointer rounded-xl bg-[var(--primary)] px-6 py-3 font-medium text-white transition-colors hover:bg-[var(--primary-hover)] active:scale-95"
         >
           Try Again
         </button>
@@ -115,7 +115,7 @@ export default function ChapterPage() {
         <button
           type="button"
           onClick={() => router.push('/dashboard')}
-          className="mt-4 text-[var(--primary)] underline"
+          className="mt-4 cursor-pointer text-[var(--primary)] underline transition-colors active:scale-95"
         >
           Back to Dashboard
         </button>
@@ -128,7 +128,7 @@ export default function ChapterPage() {
       <button
         type="button"
         onClick={() => router.push('/dashboard')}
-        className="mb-4 flex items-center gap-1 text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+        className="mb-4 flex cursor-pointer items-center gap-1 text-sm text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] active:scale-95"
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <polyline points="15 18 9 12 15 6" />
@@ -147,7 +147,7 @@ export default function ChapterPage() {
         <button
           type="button"
           onClick={() => router.push(`/lesson/${nextAvailableLesson.id}`)}
-          className="mb-8 w-full rounded-xl bg-[var(--primary)] px-6 py-3 text-center font-semibold text-white transition-colors hover:bg-[var(--primary-hover)]"
+          className="mb-8 w-full cursor-pointer rounded-xl bg-[var(--primary)] px-6 py-3 text-center font-semibold text-white transition-colors hover:bg-[var(--primary-hover)] active:scale-95"
         >
           Start Lesson
         </button>

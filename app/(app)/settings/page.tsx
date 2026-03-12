@@ -104,6 +104,13 @@ export default function SettingsPage() {
           <option value="koch">Koch Method</option>
           <option value="alphabetical">Alphabetical</option>
         </select>
+        <p className="mt-3 text-xs text-[var(--text-muted)] leading-relaxed">
+          {guide === 'google'
+            ? 'Visual mnemonics — each letter is associated with a word and illustration that resembles the dot/dash pattern, making it easier to remember.'
+            : guide === 'koch'
+              ? 'Sound-first approach — letters are learned by ear at full speed, building instant sound recognition. Visual mnemonics are available but hidden by default.'
+              : 'Letters taught A–Z in alphabetical order. Visual mnemonics are available but hidden by default.'}
+        </p>
       </div>
 
       {/* Input Mode */}
@@ -138,7 +145,7 @@ export default function SettingsPage() {
           </div>
           <button
             onClick={() => setAudioEnabled(!audioEnabled)}
-            className={`relative h-7 w-12 rounded-full transition-colors ${
+            className={`relative h-7 w-12 cursor-pointer rounded-full transition-colors active:scale-95 ${
               audioEnabled ? 'bg-[var(--primary)]' : 'bg-[var(--border)]'
             }`}
           >
@@ -155,7 +162,7 @@ export default function SettingsPage() {
       <button
         onClick={saveSettings}
         disabled={saving}
-        className="w-full rounded-xl bg-[var(--primary)] px-6 py-3 font-medium text-white transition-colors hover:bg-[var(--primary-hover)] disabled:opacity-50"
+        className="w-full cursor-pointer rounded-xl bg-[var(--primary)] px-6 py-3 font-medium text-white transition-colors hover:bg-[var(--primary-hover)] active:scale-95 disabled:opacity-50"
       >
         {saving ? 'Saving...' : 'Save Settings'}
       </button>
@@ -168,7 +175,7 @@ export default function SettingsPage() {
         </p>
         <button
           onClick={() => setShowResetModal(true)}
-          className="w-full rounded-xl bg-red-50 px-6 py-3 text-sm font-medium text-[var(--error)] ring-1 ring-red-200 transition-colors hover:bg-red-100"
+          className="w-full cursor-pointer rounded-xl bg-red-50 px-6 py-3 text-sm font-medium text-[var(--error)] ring-1 ring-red-200 transition-colors hover:bg-red-100 active:scale-95"
         >
           Reset All Progress
         </button>
@@ -181,7 +188,7 @@ export default function SettingsPage() {
           await supabase.auth.signOut();
           router.push('/login');
         }}
-        className="w-full rounded-xl bg-[var(--surface)] px-6 py-3 text-sm font-medium text-[var(--error)] ring-1 ring-[var(--border)]"
+        className="w-full cursor-pointer rounded-xl bg-[var(--surface)] px-6 py-3 text-sm font-medium text-[var(--error)] ring-1 ring-[var(--border)] transition-colors hover:bg-[var(--background)] active:scale-95"
       >
         Sign Out
       </button>
@@ -198,7 +205,7 @@ export default function SettingsPage() {
               <button
                 onClick={() => setShowResetModal(false)}
                 disabled={resetting}
-                className="flex-1 rounded-xl bg-[var(--surface)] px-4 py-3 text-sm font-medium text-[var(--text-primary)] ring-1 ring-[var(--border)]"
+                className="flex-1 cursor-pointer rounded-xl bg-[var(--surface)] px-4 py-3 text-sm font-medium text-[var(--text-primary)] ring-1 ring-[var(--border)] transition-colors active:scale-95"
               >
                 Cancel
               </button>
@@ -218,7 +225,7 @@ export default function SettingsPage() {
                   }
                 }}
                 disabled={resetting}
-                className="flex-1 rounded-xl bg-[var(--error)] px-4 py-3 text-sm font-medium text-white disabled:opacity-50"
+                className="flex-1 cursor-pointer rounded-xl bg-[var(--error)] px-4 py-3 text-sm font-medium text-white transition-colors active:scale-95 disabled:opacity-50"
               >
                 {resetting ? 'Resetting...' : 'Confirm Reset'}
               </button>

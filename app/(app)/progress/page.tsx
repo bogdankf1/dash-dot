@@ -73,7 +73,7 @@ export default function ProgressPage() {
         <button
           type="button"
           onClick={fetchProgress}
-          className="rounded-xl bg-[var(--primary)] px-6 py-3 font-medium text-white transition-colors hover:bg-[var(--primary-hover)]"
+          className="cursor-pointer rounded-xl bg-[var(--primary)] px-6 py-3 font-medium text-white transition-colors hover:bg-[var(--primary-hover)] active:scale-95"
         >
           Try Again
         </button>

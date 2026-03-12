@@ -24,6 +24,8 @@ export default function PracticePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [practicePattern, setPracticePattern] = useState('');
+  const [lastTappedPattern, setLastTappedPattern] = useState('');
+  const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const loadProgress = async () => {
@@ -67,6 +69,8 @@ export default function PracticePage() {
     const next = symbols[Math.floor(Math.random() * symbols.length)];
     setCurrentSymbol(next);
     setFeedback(null);
+    setSelectedOption(null);
+    setLastTappedPattern('');
 
     if (mode === 'listen') {
       playMorse(MORSE_MAP[next]);
@@ -85,6 +89,7 @@ export default function PracticePage() {
       if (!currentSymbol) return;
       const correct = practicePattern === MORSE_MAP[currentSymbol];
       setFeedback(correct ? 'correct' : 'wrong');
+      setLastTappedPattern(practicePattern);
       setStats((prev) => ({
         correct: prev.correct + (correct ? 1 : 0),
         total: prev.total + 1,
@@ -97,15 +102,15 @@ export default function PracticePage() {
   const handleIdentifyAnswer = useCallback(
     (symbol: string) => {
       if (!currentSymbol) return;
+      setSelectedOption(symbol);
       const correct = symbol === currentSymbol;
       setFeedback(correct ? 'correct' : 'wrong');
       setStats((prev) => ({
         correct: prev.correct + (correct ? 1 : 0),
         total: prev.total + 1,
       }));
-      timerRef.current = setTimeout(() => pickRandom(), 1000);
     },
-    [currentSymbol, pickRandom]
+    [currentSymbol]
   );
 
   // Cleanup timer on unmount or when leaving practice
@@ -143,7 +148,7 @@ export default function PracticePage() {
         <button
           type="button"
           onClick={loadProgress}
-          className="rounded-xl bg-(--primary) px-6 py-3 font-medium text-white transition-colors hover:bg-(--primary-hover)"
+          className="cursor-pointer rounded-xl bg-(--primary) px-6 py-3 font-medium text-white transition-colors hover:bg-(--primary-hover) active:scale-95"
         >
           Try Again
         </button>
@@ -177,7 +182,7 @@ export default function PracticePage() {
               <button
                 key={m.value}
                 onClick={() => setMode(m.value)}
-                className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                className={`flex-1 cursor-pointer rounded-lg px-3 py-2 text-sm font-medium transition-colors active:scale-95 ${
                   mode === m.value
                     ? 'bg-(--primary) text-white'
                     : 'bg-(--surface) text-(--text-muted) ring-1 ring-(--border)'
@@ -201,7 +206,7 @@ export default function PracticePage() {
               <button
                 key={c.value}
                 onClick={() => setCategory(c.value)}
-                className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                className={`flex-1 cursor-pointer rounded-lg px-3 py-2 text-sm font-medium transition-colors active:scale-95 ${
                   category === c.value
                     ? 'text-(--primary) ring-2 ring-(--primary) bg-transparent'
                     : 'bg-(--surface) text-(--text-muted) ring-1 ring-(--border)'
@@ -240,7 +245,7 @@ export default function PracticePage() {
                         });
                       }
                     }}
-                    className="text-xs font-medium text-(--primary)"
+                    className="cursor-pointer text-xs font-medium text-(--primary) transition-colors active:scale-95"
                   >
                     {allSelected ? 'Deselect All' : 'Select All'}
                   </button>
@@ -254,7 +259,7 @@ export default function PracticePage() {
                       <button
                         key={sym}
                         onClick={() => toggleSymbol(sym)}
-                        className={`flex aspect-square items-center justify-center rounded-lg text-sm font-bold transition-all ${
+                        className={`flex aspect-square cursor-pointer items-center justify-center rounded-lg text-sm font-bold transition-all active:scale-90 ${
                           selected
                             ? mastery >= 3
                               ? 'bg-green-100 text-green-700 ring-2 ring-green-400'
@@ -277,7 +282,7 @@ export default function PracticePage() {
         <button
           onClick={startPractice}
           disabled={selectedSymbols.size < minSymbols}
-          className="w-full rounded-xl bg-(--primary) px-6 py-4 font-medium text-white transition-colors hover:bg-(--primary-hover) disabled:opacity-50"
+          className="w-full cursor-pointer rounded-xl bg-(--primary) px-6 py-4 font-medium text-white transition-colors hover:bg-(--primary-hover) active:scale-95 disabled:opacity-50"
         >
           Start Practice ({(() => {
             const currentSymbols = category === 'letters' ? allLetters : category === 'numbers' ? allNumbers : allPunctuation;
@@ -305,7 +310,7 @@ export default function PracticePage() {
           <button
             type="button"
             onClick={() => setIsActive(false)}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-(--text-muted) transition-colors hover:bg-(--surface) hover:text-(--text-primary)"
+            className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-lg text-(--text-muted) transition-colors hover:bg-(--surface) hover:text-(--text-primary) active:scale-90"
             title="End practice"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -332,26 +337,14 @@ export default function PracticePage() {
       <div className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto px-4 py-4">
         {currentSymbol && (
           <div className="w-full max-w-lg mx-auto rounded-2xl p-6" style={{ backgroundColor: 'var(--surface)' }}>
-            {/* Feedback */}
-            {feedback && (
-              <div className="mb-4 text-center">
-                {feedback === 'correct' && (
-                  <p className="text-lg font-bold" style={{ color: 'var(--success)' }}>
-                    Correct!
-                  </p>
-                )}
-                {feedback === 'wrong' && currentSymbol && (
-                  <div className="space-y-2">
-                    <p className="text-lg font-bold" style={{ color: 'var(--error)' }}>
-                      The answer was:
-                    </p>
-                    <div className="flex items-center justify-center">
-                      <MorseDisplay pattern={MORSE_MAP[currentSymbol]} size="md" />
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
+            {/* Feedback — fixed height to prevent layout jump */}
+            <div className="mb-4 text-center h-7">
+              {feedback && (
+                <p className="text-lg font-bold" style={{ color: feedback === 'correct' ? 'var(--success)' : 'var(--error)' }}>
+                  {feedback === 'correct' ? 'Correct!' : 'Incorrect'}
+                </p>
+              )}
+            </div>
 
             {/* Tap mode */}
             {mode === 'tap' && (
@@ -362,7 +355,13 @@ export default function PracticePage() {
                 <div className="text-4xl font-bold sm:text-5xl" style={{ color: 'var(--text-primary)' }}>
                   {currentSymbol}
                 </div>
-                {!feedback && <MorseInput onChange={setPracticePattern} />}
+                <MorseInput
+                  onChange={setPracticePattern}
+                  disabled={!!feedback}
+                  feedback={feedback === 'correct' ? 'correct' : feedback === 'wrong' ? 'incorrect' : null}
+                  frozenPattern={lastTappedPattern}
+                  correctPattern={feedback === 'wrong' && currentSymbol ? MORSE_MAP[currentSymbol] : undefined}
+                />
               </div>
             )}
 
@@ -397,7 +396,13 @@ export default function PracticePage() {
                     <span className="text-xs font-bold">&frac12;</span>
                   </button>
                 </div>
-                {!feedback && <MorseInput onChange={setPracticePattern} />}
+                <MorseInput
+                  onChange={setPracticePattern}
+                  disabled={!!feedback}
+                  feedback={feedback === 'correct' ? 'correct' : feedback === 'wrong' ? 'incorrect' : null}
+                  frozenPattern={lastTappedPattern}
+                  correctPattern={feedback === 'wrong' && currentSymbol ? MORSE_MAP[currentSymbol] : undefined}
+                />
               </div>
             )}
 
@@ -411,6 +416,7 @@ export default function PracticePage() {
                 <div className="grid grid-cols-2 gap-3 w-full max-w-xs">
                   {options.map((symbol) => {
                     const isCorrectOption = symbol === currentSymbol;
+                    const isSelected = symbol === selectedOption;
                     const answered = feedback !== null;
 
                     let optionBg = 'var(--surface)';
@@ -422,6 +428,10 @@ export default function PracticePage() {
                         optionBg = '#dcfce7';
                         optionBorder = '#4ade80';
                         optionColor = '#166534';
+                      } else if (isSelected) {
+                        optionBg = '#fee2e2';
+                        optionBorder = '#f87171';
+                        optionColor = '#991b1b';
                       }
                     }
 
@@ -462,33 +472,42 @@ export default function PracticePage() {
       </div>
 
       {/* Bottom button bar — matches lesson layout */}
-      {mode !== 'identify' && (
-        <div
-          className="shrink-0 border-t border-(--border) bg-(--background) px-4 py-3"
-          style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
-        >
-          {!feedback ? (
-            <button
-              type="button"
-              onClick={handleTapCheck}
-              disabled={!practicePattern}
-              className="w-full h-14 rounded-xl font-semibold text-white text-lg transition-colors cursor-pointer disabled:opacity-40 active:scale-95"
-              style={{ backgroundColor: 'var(--primary)' }}
-            >
-              Check
-            </button>
-          ) : (
+      <div
+        className="shrink-0 border-t border-(--border) bg-(--background) px-4 py-3"
+        style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
+      >
+        {mode === 'identify' ? (
+          feedback && (
             <button
               type="button"
               onClick={pickRandom}
               className="w-full h-14 rounded-xl font-semibold text-white text-lg transition-colors cursor-pointer active:scale-95"
               style={{ backgroundColor: feedback === 'correct' ? 'var(--success)' : 'var(--primary)' }}
             >
-              Continue
+              {feedback === 'correct' ? 'Continue' : 'Got It'}
             </button>
-          )}
-        </div>
-      )}
+          )
+        ) : !feedback ? (
+          <button
+            type="button"
+            onClick={handleTapCheck}
+            disabled={!practicePattern}
+            className="w-full h-14 rounded-xl font-semibold text-white text-lg transition-colors cursor-pointer disabled:opacity-40 active:scale-95"
+            style={{ backgroundColor: 'var(--primary)' }}
+          >
+            Check
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={pickRandom}
+            className="w-full h-14 rounded-xl font-semibold text-white text-lg transition-colors cursor-pointer active:scale-95"
+            style={{ backgroundColor: feedback === 'correct' ? 'var(--success)' : 'var(--primary)' }}
+          >
+            {feedback === 'correct' ? 'Continue' : 'Got It'}
+          </button>
+        )}
+      </div>
     </div>
   );
 }

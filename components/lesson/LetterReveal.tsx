@@ -12,13 +12,6 @@ interface LetterRevealProps {
   mnemonicGuide?: MnemonicGuideType;
 }
 
-function patternToReadable(pattern: string): string {
-  return pattern
-    .split('')
-    .map((c) => (c === '.' ? '\u00B7' : '\u2014'))
-    .join(' ');
-}
-
 export default function LetterReveal({
   symbol,
   pattern,
@@ -26,6 +19,8 @@ export default function LetterReveal({
 }: LetterRevealProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioEnabled, setAudioEnabled] = useState(true);
+  // For Koch/Alphabetical, hide mnemonics by default (sound-first approach)
+  const [showMnemonic, setShowMnemonic] = useState(mnemonicGuide === 'hello-morse');
 
   useEffect(() => {
     try {
@@ -67,17 +62,24 @@ export default function LetterReveal({
       </div>
 
       {getMnemonics(mnemonicGuide)[symbol.toUpperCase()] && (
-        <MnemonicIllustration letter={symbol} guide={mnemonicGuide} />
+        showMnemonic ? (
+          <MnemonicIllustration letter={symbol} guide={mnemonicGuide} />
+        ) : (
+          <button
+            type="button"
+            onClick={() => setShowMnemonic(true)}
+            className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
+            style={{ color: 'var(--text-muted)', border: '1px solid var(--border)' }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" />
+            </svg>
+            Show Mnemonic
+          </button>
+        )
       )}
 
       <MorseDisplay pattern={pattern} size="lg" animated />
-
-      <p
-        className="text-2xl font-mono tracking-widest"
-        style={{ color: 'var(--text-muted)' }}
-      >
-        {patternToReadable(pattern)}
-      </p>
 
       {audioEnabled && (
         <div className="flex items-center gap-3">
