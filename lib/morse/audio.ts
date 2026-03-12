@@ -8,15 +8,33 @@ const FREQUENCY = 600;
 let audioContext: AudioContext | null = null;
 let activeTapGain: GainNode | null = null;
 let activeTapOsc: OscillatorNode | null = null;
+let unlocked = false;
 
 function getAudioContext(): AudioContext {
   if (!audioContext) {
     audioContext = new AudioContext();
   }
-  if (audioContext.state === 'suspended') {
-    audioContext.resume();
-  }
   return audioContext;
+}
+
+/**
+ * Unlock the AudioContext on iOS/Safari.
+ * Must be called from a direct user gesture (click/touchend).
+ * Creates the context, resumes it, and plays a silent buffer to fully unlock.
+ */
+export function unlockAudio(): void {
+  if (unlocked) return;
+  const ctx = getAudioContext();
+  if (ctx.state === 'suspended') {
+    ctx.resume();
+  }
+  // Play a silent buffer to fully unlock on iOS
+  const buffer = ctx.createBuffer(1, 1, ctx.sampleRate);
+  const source = ctx.createBufferSource();
+  source.buffer = buffer;
+  source.connect(ctx.destination);
+  source.start(0);
+  unlocked = true;
 }
 
 function stopActiveTap() {
@@ -36,6 +54,11 @@ export async function playBeep(
   tap: boolean = false
 ): Promise<void> {
   const ctx = getAudioContext();
+
+  // Ensure context is running (may be suspended on iOS after backgrounding)
+  if (ctx.state === 'suspended') {
+    await ctx.resume();
+  }
 
   if (tap) stopActiveTap();
 

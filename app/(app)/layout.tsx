@@ -1,4 +1,5 @@
 import BottomNav from '@/components/layout/BottomNav';
+import AudioUnlock from '@/components/layout/AudioUnlock';
 
 export default function AppLayout({
   children,
@@ -7,6 +8,7 @@ export default function AppLayout({
 }) {
   return (
     <div className="min-h-screen pb-24" style={{ paddingBottom: 'max(6rem, env(safe-area-inset-bottom, 6rem))' }}>
+      <AudioUnlock />
       <main className="mx-auto max-w-lg px-4 py-6">
         {children}
       </main>
