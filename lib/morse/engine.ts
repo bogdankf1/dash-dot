@@ -69,34 +69,35 @@ export function generateLesson(
       showMnemonic: true,
     });
 
-    for (let i = 0; i < 2; i++) {
-      symbolExercises.push({
-        type: 'tap-assisted',
-        symbol,
-        showPattern: true,
-        showMnemonic: false,
-      });
-    }
+    symbolExercises.push({
+      type: 'tap-assisted',
+      symbol,
+      showPattern: true,
+      showMnemonic: false,
+    });
 
-    for (let i = 0; i < 2; i++) {
-      symbolExercises.push({
-        type: 'tap-recall',
-        symbol,
-        showPattern: false,
-        showMnemonic: false,
-      });
-    }
+    symbolExercises.push({
+      type: 'tap-recall',
+      symbol,
+      showPattern: false,
+      showMnemonic: false,
+    });
 
-    for (let i = 0; i < 2; i++) {
-      const options = pickRandomOptions(symbol, allKnown, 3);
-      symbolExercises.push({
-        type: 'identify',
-        symbol,
-        options,
-        showPattern: false,
-        showMnemonic: false,
-      });
-    }
+    const options = pickRandomOptions(symbol, allKnown, 3);
+    symbolExercises.push({
+      type: 'identify',
+      symbol,
+      options,
+      showPattern: false,
+      showMnemonic: false,
+    });
+
+    symbolExercises.push({
+      type: 'translate',
+      symbol,
+      showPattern: false,
+      showMnemonic: false,
+    });
 
     newExercises.push(symbolExercises);
   }
