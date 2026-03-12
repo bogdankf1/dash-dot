@@ -20,7 +20,9 @@ function getAudioContext(): AudioContext {
 /**
  * Unlock the AudioContext on iOS/Safari.
  * Must be called from a direct user gesture (click/touchend).
- * Creates the context, resumes it, and plays a silent buffer to fully unlock.
+ * Creates the context, resumes it, plays a silent buffer, and uses an
+ * <audio> element to switch the iOS audio session to "playback" category
+ * so audio plays even when the mute switch is on.
  */
 export function unlockAudio(): void {
   if (unlocked) return;
@@ -28,12 +30,22 @@ export function unlockAudio(): void {
   if (ctx.state === 'suspended') {
     ctx.resume();
   }
-  // Play a silent buffer to fully unlock on iOS
+  // Play a silent buffer via Web Audio API to unlock the context
   const buffer = ctx.createBuffer(1, 1, ctx.sampleRate);
   const source = ctx.createBufferSource();
   source.buffer = buffer;
   source.connect(ctx.destination);
   source.start(0);
+
+  // Play a silent <audio> element to switch iOS audio session to "playback"
+  // category, which ignores the hardware mute switch
+  try {
+    const audio = new Audio();
+    audio.src = 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABhgC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAAAAYYoRBqSAAAAAAAAAAAAAAAAAAAA//tQZAAP8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAETEFNRTMuMTAwVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV//tQZB8P8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAEVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV';
+    audio.setAttribute('playsinline', '');
+    audio.play().catch(() => {});
+  } catch {}
+
   unlocked = true;
 }
 
