@@ -38,6 +38,7 @@ export default function LessonPage() {
   const [skipAudio, setSkipAudio] = useState(false);
   const [showExitModal, setShowExitModal] = useState(false);
   const [mnemonicGuide, setMnemonicGuide] = useState<MnemonicGuideType>('dashdot');
+  const [showAudioTip, setShowAudioTip] = useState(false);
   const [lessonMeta, setLessonMeta] = useState<{
     chapterId: string;
     newSymbols: string[];
@@ -123,7 +124,7 @@ export default function LessonPage() {
 
       setExercises(generatedExercises);
 
-      // Load mnemonic guide preference
+      // Load mnemonic guide preference and audio tip state
       try {
         const localSettings = localStorage.getItem('dashdot-settings');
         if (localSettings) {
@@ -131,6 +132,12 @@ export default function LessonPage() {
           if (parsed.mnemonicGuide === 'hello-morse') {
             setMnemonicGuide('hello-morse');
           }
+          if (parsed.audioEnabled !== false && !parsed.audioTipDismissed) {
+            setShowAudioTip(true);
+          }
+        } else {
+          // No settings yet — show tip on first lesson
+          setShowAudioTip(true);
         }
       } catch {}
 
@@ -438,6 +445,31 @@ export default function LessonPage() {
               className="cursor-pointer rounded-lg px-3 py-1.5 text-xs font-medium text-[var(--text-muted)] ring-1 ring-[var(--border)] transition-colors active:scale-95"
             >
               Can&apos;t listen now? Skip audio
+            </button>
+          </div>
+        )}
+        {showAudioTip && (
+          <div className="mt-2 flex items-center justify-between gap-2 rounded-lg bg-amber-50 px-3 py-2 ring-1 ring-amber-200">
+            <p className="text-xs text-amber-700">
+              🔊 For the best experience, make sure your phone isn&apos;t on silent
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setShowAudioTip(false);
+                try {
+                  const raw = localStorage.getItem('dashdot-settings');
+                  const settings = raw ? JSON.parse(raw) : {};
+                  settings.audioTipDismissed = true;
+                  localStorage.setItem('dashdot-settings', JSON.stringify(settings));
+                } catch {}
+              }}
+              className="flex-shrink-0 cursor-pointer text-amber-400 hover:text-amber-600"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
             </button>
           </div>
         )}
