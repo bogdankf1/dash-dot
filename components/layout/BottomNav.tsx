@@ -36,6 +36,28 @@ const navItems = [
     ),
   },
   {
+    href: '/leaderboard',
+    label: 'Board',
+    icon: (active: boolean) => (
+      <svg className="h-6 w-6" viewBox="0 0 24 24" fill={active ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={active ? 0 : 1.5} strokeLinecap="round" strokeLinejoin="round">
+        {active ? (
+          <>
+            <path d="M6 3a1 1 0 00-1 1v2H3.5A1.5 1.5 0 002 7.5v1a4.5 4.5 0 004.07 4.48A5.99 5.99 0 0010 15.84V18H8a1 1 0 00-1 1v2a1 1 0 001 1h8a1 1 0 001-1v-2a1 1 0 00-1-1h-2v-2.16a5.99 5.99 0 003.93-2.86A4.5 4.5 0 0022 8.5v-1A1.5 1.5 0 0020.5 6H19V4a1 1 0 00-1-1H6z" />
+          </>
+        ) : (
+          <>
+            <path d="M6.5 6h11V4.5a.5.5 0 00-.5-.5H7a.5.5 0 00-.5.5V6z" />
+            <path d="M6.5 6H4a1 1 0 00-1 1v1.5a4 4 0 003.5 3.97" />
+            <path d="M17.5 6H20a1 1 0 011 1v1.5a4 4 0 01-3.5 3.97" />
+            <path d="M6.5 6v5.5a5.5 5.5 0 0011 0V6" />
+            <path d="M10 16.5v2h4v-2" />
+            <path d="M8 20.5h8" />
+          </>
+        )}
+      </svg>
+    ),
+  },
+  {
     href: '/profile',
     label: 'Profile',
     icon: (active: boolean) => (
