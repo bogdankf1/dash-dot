@@ -9,6 +9,7 @@ export interface UserProfile {
   streak: number;
   last_activity_date: string | null;
   selected_guide: GuideType;
+  is_alpha_tester: boolean;
   created_at: string;
 }
 

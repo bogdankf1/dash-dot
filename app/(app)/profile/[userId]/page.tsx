@@ -11,6 +11,7 @@ interface PublicProfile {
   avatar_url: string | null;
   xp: number;
   streak: number;
+  is_alpha_tester: boolean;
   created_at: string;
 }
 
@@ -250,6 +251,14 @@ export default function PublicProfilePage() {
           Badges
         </h3>
         <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
+          {profile.is_alpha_tester && (
+            <div className="flex flex-col items-center gap-1 rounded-lg p-2 text-center">
+              <span className="text-2xl">🧪</span>
+              <span className="text-xs leading-tight text-[var(--text-muted)]">
+                Alpha Tester
+              </span>
+            </div>
+          )}
           {BADGES.map((badge) => {
             const earned = earnedBadges.includes(badge);
             return (

@@ -35,7 +35,7 @@ declare
 begin
   select row_to_json(p) into v_profile
   from (
-    select id, username, avatar_url, xp, streak, created_at
+    select id, username, avatar_url, xp, streak, is_alpha_tester, created_at
     from public.profiles
     where id = p_user_id
   ) p;
