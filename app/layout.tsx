@@ -6,11 +6,17 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
+  viewportFit: 'cover',
 };
 
 export const metadata: Metadata = {
   title: 'Dash Dot — Learn Morse Code',
   description: 'A Duolingo-style Morse code learning app. Learn Morse code one letter at a time.',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'DashDot',
+  },
 };
 
 export default function RootLayout({
