@@ -27,6 +27,12 @@ function patternToReadable(pattern: string): string {
     .join(' ');
 }
 
+function symbolLabel(symbol: string): string {
+  if (/[A-Z]/i.test(symbol)) return 'letter';
+  if (/[0-9]/.test(symbol)) return 'digit';
+  return 'symbol';
+}
+
 export default function ExerciseCard({
   exercise,
   exerciseNumber,
@@ -212,7 +218,7 @@ export default function ExerciseCard({
       {exercise.type === 'tap-assisted' && (
         <div className="flex flex-col items-center gap-6">
           <p className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>
-            Tap the Morse code for:
+            Tap the Morse code for this {symbolLabel(exercise.symbol)}:
           </p>
           <div
             className="text-4xl font-bold sm:text-5xl"
@@ -239,7 +245,7 @@ export default function ExerciseCard({
       {exercise.type === 'tap-recall' && (
         <div className="flex flex-col items-center gap-6">
           <p className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>
-            Tap the Morse code for:
+            Tap the Morse code for this {symbolLabel(exercise.symbol)}:
           </p>
           <div
             className="text-4xl font-bold sm:text-5xl"
@@ -260,7 +266,7 @@ export default function ExerciseCard({
       {exercise.type === 'identify' && (
         <div className="flex flex-col items-center gap-6">
           <p className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>
-            Listen and identify the letter:
+            Listen and identify the {symbolLabel(exercise.symbol)}:
           </p>
           {audioEnabled && <SpeakerButtons onPlay={() => playMorse(correctPattern)} onPlaySlow={() => playMorse(correctPattern, 0.5)} />}
           <div className="grid grid-cols-2 gap-3 w-full max-w-xs">
@@ -321,20 +327,14 @@ export default function ExerciseCard({
       {exercise.type === 'translate' && (
         <div className="flex flex-col items-center gap-6">
           <p className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>
-            What letter is this?
+            What {symbolLabel(exercise.symbol)} is this?
           </p>
-          <p
-            className="text-3xl font-mono tracking-widest"
-            style={{ color: 'var(--text-primary)' }}
-          >
-            {patternToReadable(correctPattern)}
-          </p>
-          <MorseDisplay pattern={correctPattern} size="md" />
+          <MorseDisplay pattern={correctPattern} size="lg" />
           {!inputDisabled ? (
             <input
               type="text"
               value={textInput}
-              onChange={(e) => setTextInput(e.target.value)}
+              onChange={(e) => setTextInput(e.target.value.toUpperCase())}
               maxLength={1}
               placeholder="?"
               className="w-20 h-14 rounded-xl text-center text-2xl font-bold outline-none"
@@ -528,7 +528,7 @@ function WordListenBody({
         <input
           type="text"
           value={textInput}
-          onChange={(e) => onTextChange(e.target.value)}
+          onChange={(e) => onTextChange(e.target.value.toUpperCase())}
           maxLength={word.length + 2}
           placeholder="Type the word..."
           className="w-full max-w-xs h-14 rounded-xl text-center text-2xl font-bold outline-none"
@@ -587,7 +587,7 @@ function WordEncodeBody({
   return (
     <div className="flex flex-col items-center gap-6">
       <p className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>
-        Tap the Morse code for each letter:
+        Tap the Morse code for each character:
       </p>
       <div className="flex gap-2">
         {letters.map((letter, i) => {
@@ -666,7 +666,7 @@ function WordSpellBody({
         <input
           type="text"
           value={textInput}
-          onChange={(e) => onTextChange(e.target.value)}
+          onChange={(e) => onTextChange(e.target.value.toUpperCase())}
           maxLength={word.length + 2}
           placeholder="Type the word..."
           className="w-full max-w-xs h-14 rounded-xl text-center text-2xl font-bold outline-none"

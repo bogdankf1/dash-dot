@@ -4,9 +4,9 @@ import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
-import { generateLesson, generateWordLesson, calculateXP, updateMastery } from '@/lib/morse/engine';
+import { generateLesson, generateWordLesson, generateDailyReviewLesson, calculateXP, updateMastery } from '@/lib/morse/engine';
 import type { Exercise } from '@/lib/morse/engine';
-import { getChapters, getLessonsForChapter } from '@/lib/morse/chapters';
+import { getChapters, getLessonsForChapter, getDailyReviewLessons } from '@/lib/morse/chapters';
 import type { LetterProgress, GuideType } from '@/types';
 import ExerciseCard from '@/components/lesson/ExerciseCard';
 import ProgressBar from '@/components/lesson/ProgressBar';
@@ -84,16 +84,31 @@ export default function LessonPage() {
       // Find the lesson config
       let foundLesson = null;
       let chapterLessons: { id: string }[] = [];
-      for (const chapter of chapters) {
-        const previousSymbols = chapters
-          .filter((c) => c.index < chapter.index)
-          .flatMap((c) => c.symbols);
-        const lessons = getLessonsForChapter(chapter, previousSymbols);
-        const match = lessons.find((l) => l.id === lessonId);
-        if (match) {
-          foundLesson = match;
-          chapterLessons = lessons;
-          break;
+      const isDailyReview = lessonId.startsWith('daily-review-');
+
+      if (isDailyReview) {
+        // Extract date from lesson ID: daily-review-YYYY-MM-DD-L1
+        const dateMatch = lessonId.match(/^daily-review-(\d{4}-\d{2}-\d{2})-L\d+$/);
+        if (dateMatch) {
+          const dailyLessons = getDailyReviewLessons(dateMatch[1]);
+          const match = dailyLessons.find((l) => l.id === lessonId);
+          if (match) {
+            foundLesson = match;
+            chapterLessons = dailyLessons;
+          }
+        }
+      } else {
+        for (const chapter of chapters) {
+          const previousSymbols = chapters
+            .filter((c) => c.index < chapter.index)
+            .flatMap((c) => c.symbols);
+          const lessons = getLessonsForChapter(chapter, previousSymbols);
+          const match = lessons.find((l) => l.id === lessonId);
+          if (match) {
+            foundLesson = match;
+            chapterLessons = lessons;
+            break;
+          }
         }
       }
 
@@ -114,13 +129,19 @@ export default function LessonPage() {
         hasMoreLessons,
       });
 
-      const generatedExercises = foundLesson.isWordLesson
-        ? generateWordLesson(foundLesson.learnedLetters || [], letterProgress)
-        : generateLesson(
+      const generatedExercises = isDailyReview
+        ? generateDailyReviewLesson(
             foundLesson.newSymbols,
             foundLesson.reviewSymbols,
             letterProgress
-          );
+          )
+        : foundLesson.isWordLesson
+          ? generateWordLesson(foundLesson.learnedLetters || [], letterProgress)
+          : generateLesson(
+              foundLesson.newSymbols,
+              foundLesson.reviewSymbols,
+              letterProgress
+            );
 
       setExercises(generatedExercises);
 
@@ -354,7 +375,7 @@ export default function LessonPage() {
         <div className="w-full max-w-sm text-center">
           <div className="mb-4 text-6xl">🎉</div>
           <h2 className="mb-2 text-2xl font-bold text-[var(--text-primary)]">
-            Lesson Complete!
+            {lessonId.startsWith('daily-review-') ? 'Review Complete!' : 'Lesson Complete!'}
           </h2>
 
           <div className="mb-8 mt-6 grid grid-cols-3 gap-4">
@@ -396,7 +417,9 @@ export default function LessonPage() {
               <span className="font-medium text-[var(--text-primary)]">
                 {lessonMeta.isWordLesson
                   ? Array.from(symbolResults.keys()).join(', ')
-                  : lessonMeta.newSymbols.join(', ')}
+                  : lessonId.startsWith('daily-review-')
+                    ? Array.from(symbolResults.keys()).join(', ')
+                    : lessonMeta.newSymbols.join(', ')}
               </span>
             </div>
           )}

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import AlphabetGrid from '@/components/ui/AlphabetGrid';
-import { getChapters, getLessonsForChapter } from '@/lib/morse/chapters';
+import { getChapters, getLessonsForChapter, getDailyReviewChapter, getDailyReviewLessons } from '@/lib/morse/chapters';
 import type { UserProfile, LetterProgress, LessonHistory, Chapter, LessonConfig } from '@/types';
 
 export default function ChapterPage() {
@@ -48,21 +48,27 @@ export default function ChapterPage() {
     fetchData();
   }, []);
 
+  const isDailyReview = chapterId === 'daily-review';
   const chapters: Chapter[] = profile ? getChapters(profile.selected_guide) : [];
-  const chapter = chapters.find((c) => c.id === chapterId) ?? null;
+  const chapter = isDailyReview
+    ? getDailyReviewChapter()
+    : chapters.find((c) => c.id === chapterId) ?? null;
 
-  const previousSymbols = chapter
+  const previousSymbols = chapter && !isDailyReview
     ? chapters.filter((c) => c.index < chapter.index).flatMap((c) => c.symbols)
     : [];
 
-  const lessons: LessonConfig[] = chapter
-    ? getLessonsForChapter(chapter, previousSymbols)
-    : [];
+  const lessons: LessonConfig[] = isDailyReview
+    ? getDailyReviewLessons()
+    : chapter
+      ? getLessonsForChapter(chapter, previousSymbols)
+      : [];
 
   const completedLessonIds = new Set(lessonHistory.map((lh) => lh.lesson_id));
 
   function getLessonStatus(lesson: LessonConfig, index: number): 'completed' | 'available' | 'locked' {
     if (completedLessonIds.has(lesson.id)) return 'completed';
+    if (isDailyReview) return 'available';
     if (index === 0) return 'available';
     const prevLesson = lessons[index - 1];
     if (completedLessonIds.has(prevLesson.id)) return 'available';
@@ -136,7 +142,7 @@ export default function ChapterPage() {
         <span className="font-medium text-[var(--text-primary)]">{chapter.title}</span>
       </button>
       <p className="mb-6 text-[var(--text-muted)]">
-        Symbols: {chapter.symbols.join(', ')}
+        {isDailyReview ? 'Review all letters with fresh lessons every day' : `Symbols: ${chapter.symbols.join(', ')}`}
       </p>
 
       <div className="mb-8">
@@ -206,11 +212,15 @@ export default function ChapterPage() {
                     isLocked ? 'text-gray-400' : 'text-[var(--text-primary)]'
                   }`}
                 >
-                  {lesson.isWordLesson ? 'Word Practice' : `Lesson ${index + 1}`}
+                  {lesson.isWordLesson ? 'Word Practice' : isDailyReview ? `Review ${index + 1}` : `Lesson ${index + 1}`}
                 </h3>
                 <p className={`text-sm ${isLocked ? 'text-gray-400' : 'text-[var(--text-muted)]'}`}>
                   {lesson.isWordLesson ? (
                     'Practice real words with letters you\'ve learned'
+                  ) : isDailyReview ? (
+                    <>
+                      {lesson.newSymbols.join(', ')}
+                    </>
                   ) : (
                     <>
                       New: {lesson.newSymbols.join(', ')}

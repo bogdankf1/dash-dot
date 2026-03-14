@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import StreakBadge from '@/components/ui/StreakBadge';
 import XPBar from '@/components/ui/XPBar';
 import ChapterCard from '@/components/ui/ChapterCard';
-import { getChapters, getChapterCompletionStatus } from '@/lib/morse/chapters';
+import { getChapters, getChapterCompletionStatus, getDailyReviewChapter, getDailyReviewLessons } from '@/lib/morse/chapters';
 import type { UserProfile, LetterProgress, LessonHistory, Chapter } from '@/types';
 
 export default function DashboardPage() {
@@ -53,12 +53,28 @@ export default function DashboardPage() {
     ? getChapterCompletionStatus(chapters, completedLessonIds)
     : new Map();
 
+  // Check if all regular chapters are complete
+  const allChaptersComplete = chapters.length > 0 && chapters.every((ch) => {
+    const status = completionStatus.get(ch.id);
+    return status && status.completed >= status.total;
+  });
+
+  // Daily review chapter status
+  const dailyReviewLessons = getDailyReviewLessons();
+  const dailyReviewCompleted = dailyReviewLessons.filter((l) =>
+    completedLessonIds.includes(l.id)
+  ).length;
+
   function findFirstIncompleteChapter(): string | null {
     for (const chapter of chapters) {
       const status = completionStatus.get(chapter.id);
       if (status && status.unlocked && status.completed < status.total) {
         return chapter.id;
       }
+    }
+    // If all done, go to daily review
+    if (allChaptersComplete) {
+      return 'daily-review';
     }
     return chapters.length > 0 ? chapters[0].id : null;
   }
@@ -114,7 +130,7 @@ export default function DashboardPage() {
         onClick={handleContinueLearning}
         className="mb-8 w-full cursor-pointer rounded-xl bg-[var(--primary)] px-6 py-3 text-center font-semibold text-white transition-colors hover:bg-[var(--primary-hover)] active:scale-95"
       >
-        Continue Learning
+        {allChaptersComplete ? 'Daily Review' : 'Continue Learning'}
       </button>
 
       <h2 className="mb-4 text-lg font-bold text-[var(--text-primary)]">Chapters</h2>
@@ -138,6 +154,18 @@ export default function DashboardPage() {
             />
           );
         })}
+
+        {allChaptersComplete && (
+          <ChapterCard
+            chapter={getDailyReviewChapter()}
+            completion={{
+              total: dailyReviewLessons.length,
+              completed: dailyReviewCompleted,
+              unlocked: true,
+            }}
+            onClick={() => router.push('/learn/daily-review')}
+          />
+        )}
       </div>
     </div>
   );

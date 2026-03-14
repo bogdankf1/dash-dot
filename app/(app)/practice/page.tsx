@@ -79,7 +79,12 @@ export default function PracticePage() {
   }, []);
 
   const startPractice = () => {
-    const symbols = Array.from(selectedSymbols);
+    const currentCategorySymbols = category === 'letters'
+      ? allLetters
+      : category === 'numbers'
+        ? allNumbers
+        : allPunctuation;
+    const symbols = currentCategorySymbols.filter((s) => selectedSymbols.has(s));
     if (symbols.length < 2) return;
 
     const generatedExercises = generatePracticeSession(symbols, letterProgress);
@@ -252,7 +257,8 @@ export default function PracticePage() {
 
   const allLetters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
   const allNumbers = '0123456789'.split('');
-  const allPunctuation = ['.', ',', '?', '!', '/', '(', ')', '&', ':', ';', '=', '+', '-', '_', '"', '$', '@'];
+  const learnedSymbols = new Set(letterProgress.filter((lp) => lp.mastery_level >= 1).map((lp) => lp.symbol));
+  const allPunctuation = ['.', ',', '?', '!', '/', '(', ')', '&', ':', ';', '=', '+', '-', '_', '"', '$', '@'].filter((s) => learnedSymbols.has(s));
 
   if (!isActive) {
     return (

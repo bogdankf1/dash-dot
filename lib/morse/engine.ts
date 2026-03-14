@@ -174,7 +174,19 @@ export function generateLesson(
     reviewIndex++;
   }
 
-  return result.slice(0, 20);
+  const sliced = result.slice(0, 20);
+
+  // Trim trailing introduce/tap-assisted exercises that leave no room to practice
+  // the new symbol (the user just sees it and the lesson ends)
+  while (
+    sliced.length > 0 &&
+    (sliced[sliced.length - 1].type === 'introduce' ||
+      sliced[sliced.length - 1].type === 'tap-assisted')
+  ) {
+    sliced.pop();
+  }
+
+  return sliced;
 }
 
 export function generateWordLesson(
@@ -259,6 +271,74 @@ export function generateWordLesson(
   }
 
   return result.slice(0, 20);
+}
+
+export function generateDailyReviewLesson(
+  symbols: string[],
+  reviewSymbols: string[],
+  letterProgress: LetterProgress[]
+): Exercise[] {
+  const progressMap = new Map<string, LetterProgress>();
+  for (const lp of letterProgress) {
+    progressMap.set(lp.symbol, lp);
+  }
+
+  const allKnown = [...symbols, ...reviewSymbols];
+
+  // All exercises are review-style (no introduce/tap-assisted since user already knows them)
+  const weighted = symbols.map((symbol) => {
+    const progress = progressMap.get(symbol);
+    const errorRate =
+      progress && progress.attempt_count > 0
+        ? 1 - progress.correct_count / progress.attempt_count
+        : 0.5;
+    return { symbol, weight: errorRate + 0.1 };
+  });
+
+  const totalWeight = weighted.reduce((sum, r) => sum + r.weight, 0);
+  const exercises: Exercise[] = [];
+
+  for (let i = 0; i < 20; i++) {
+    let rand = Math.random() * totalWeight;
+    let chosen = weighted[0].symbol;
+    for (const entry of weighted) {
+      rand -= entry.weight;
+      if (rand <= 0) {
+        chosen = entry.symbol;
+        break;
+      }
+    }
+
+    const roll = Math.random();
+    let exerciseType: ExerciseType;
+    if (roll < 0.35) {
+      exerciseType = 'tap-recall';
+    } else if (roll < 0.65) {
+      exerciseType = 'identify';
+    } else {
+      exerciseType = 'translate';
+    }
+
+    if (exerciseType === 'identify') {
+      const options = pickRandomOptions(chosen, allKnown, 3);
+      exercises.push({
+        type: 'identify',
+        symbol: chosen,
+        options,
+        showPattern: false,
+        showMnemonic: false,
+      });
+    } else {
+      exercises.push({
+        type: exerciseType,
+        symbol: chosen,
+        showPattern: false,
+        showMnemonic: false,
+      });
+    }
+  }
+
+  return exercises;
 }
 
 export function calculateXP(
