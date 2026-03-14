@@ -1,32 +1,47 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { MORSE_MAP } from '@/lib/morse/codes';
-import { playMorse } from '@/lib/morse/audio';
-import { shuffle } from '@/lib/morse/engine';
+import { createClient } from '@/lib/supabase/client';
+import { generatePracticeSession, calculatePracticeXP, updateMastery } from '@/lib/morse/engine';
+import type { Exercise } from '@/lib/morse/engine';
 import type { LetterProgress } from '@/types';
-import MorseDisplay from '@/components/lesson/MorseDisplay';
-import MorseInput from '@/components/lesson/MorseInput';
+import ExerciseCard from '@/components/lesson/ExerciseCard';
+import ProgressBar from '@/components/lesson/ProgressBar';
+import type { MnemonicGuideType } from '@/lib/morse/mnemonics';
 
-type PracticeMode = 'tap' | 'listen' | 'identify';
 type SymbolCategory = 'letters' | 'numbers' | 'punctuation';
 
+interface SymbolResult {
+  symbol: string;
+  correct: number;
+  attempts: number;
+  masteryLevel: number;
+}
+
 export default function PracticePage() {
+  const router = useRouter();
   const [letterProgress, setLetterProgress] = useState<LetterProgress[]>([]);
   const [selectedSymbols, setSelectedSymbols] = useState<Set<string>>(new Set());
   const [isActive, setIsActive] = useState(false);
-  const [currentSymbol, setCurrentSymbol] = useState<string | null>(null);
-  const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
-  const [mode, setMode] = useState<PracticeMode>('tap');
   const [category, setCategory] = useState<SymbolCategory>('letters');
-  const [stats, setStats] = useState({ correct: 0, total: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  const [practicePattern, setPracticePattern] = useState('');
-  const [lastTappedPattern, setLastTappedPattern] = useState('');
-  const [selectedOption, setSelectedOption] = useState<string | null>(null);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Lesson-like session state
+  const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [lives, setLives] = useState(3);
+  const [correctCount, setCorrectCount] = useState(0);
+  const [totalAnswered, setTotalAnswered] = useState(0);
+  const [isComplete, setIsComplete] = useState(false);
+  const [isGameOver, setIsGameOver] = useState(false);
+  const [xpEarned, setXpEarned] = useState(0);
+  const [streakInfo, setStreakInfo] = useState<{ continued: boolean; newStreak: number } | null>(null);
+  const [showExitModal, setShowExitModal] = useState(false);
+  const [mnemonicGuide, setMnemonicGuide] = useState<MnemonicGuideType>('dashdot');
+  const [symbolResults, setSymbolResults] = useState<Map<string, SymbolResult>>(new Map());
 
   const loadProgress = async () => {
     setError(false);
@@ -63,62 +78,141 @@ export default function PracticePage() {
     loadProgress();
   }, []);
 
-  const pickRandom = useCallback(() => {
-    const symbols = Array.from(selectedSymbols);
-    if (symbols.length === 0) return;
-    const next = symbols[Math.floor(Math.random() * symbols.length)];
-    setCurrentSymbol(next);
-    setFeedback(null);
-    setSelectedOption(null);
-    setLastTappedPattern('');
-
-    if (mode === 'listen') {
-      playMorse(MORSE_MAP[next]);
-    }
-  }, [selectedSymbols, mode]);
-
-  const minSymbols = mode === 'identify' ? 4 : 2;
   const startPractice = () => {
-    if (selectedSymbols.size < minSymbols) return;
+    const symbols = Array.from(selectedSymbols);
+    if (symbols.length < 2) return;
+
+    const generatedExercises = generatePracticeSession(symbols, letterProgress);
+    setExercises(generatedExercises);
+    setCurrentIndex(0);
+    setLives(3);
+    setCorrectCount(0);
+    setTotalAnswered(0);
+    setIsComplete(false);
+    setIsGameOver(false);
+    setXpEarned(0);
+    setStreakInfo(null);
+    setSymbolResults(new Map());
     setIsActive(true);
-    setStats({ correct: 0, total: 0 });
-    pickRandom();
+
+    // Load mnemonic guide preference
+    try {
+      const localSettings = localStorage.getItem('dashdot-settings');
+      if (localSettings) {
+        const parsed = JSON.parse(localSettings);
+        if (parsed.mnemonicGuide === 'hello-morse') {
+          setMnemonicGuide('hello-morse');
+        }
+      }
+    } catch {}
   };
 
-  const handleTapCheck = useCallback(() => {
-      if (!currentSymbol) return;
-      const correct = practicePattern === MORSE_MAP[currentSymbol];
-      setFeedback(correct ? 'correct' : 'wrong');
-      setLastTappedPattern(practicePattern);
-      setStats((prev) => ({
-        correct: prev.correct + (correct ? 1 : 0),
-        total: prev.total + 1,
-      }));
-      setPracticePattern('');
+  const handleAnswer = useCallback(
+    (correct: boolean) => {
+      const exercise = exercises[currentIndex];
+      setTotalAnswered((prev) => prev + 1);
+
+      if (correct) {
+        setCorrectCount((prev) => prev + 1);
+      } else {
+        setLives((prev) => {
+          const newLives = prev - 1;
+          if (newLives <= 0) {
+            setIsGameOver(true);
+          }
+          return newLives;
+        });
+      }
+
+      // Track symbol result
+      setSymbolResults((prev) => {
+        const updated = new Map(prev);
+        const sym = exercise.symbol;
+        const existing = updated.get(sym) || {
+          symbol: sym,
+          correct: 0,
+          attempts: 0,
+          masteryLevel: 1,
+        };
+        existing.attempts += 1;
+        if (correct) existing.correct += 1;
+        existing.masteryLevel = updateMastery(
+          existing.masteryLevel as 0 | 1 | 2 | 3,
+          existing.correct,
+          existing.attempts
+        );
+        updated.set(sym, existing);
+        return updated;
+      });
+
+      // Move to next exercise
+      if (currentIndex + 1 >= exercises.length) {
+        setIsComplete(true);
+      } else {
+        setCurrentIndex((prev) => prev + 1);
+      }
     },
-    [currentSymbol, practicePattern]
+    [currentIndex, exercises]
   );
 
-  const handleIdentifyAnswer = useCallback(
-    (symbol: string) => {
-      if (!currentSymbol) return;
-      setSelectedOption(symbol);
-      const correct = symbol === currentSymbol;
-      setFeedback(correct ? 'correct' : 'wrong');
-      setStats((prev) => ({
-        correct: prev.correct + (correct ? 1 : 0),
-        total: prev.total + 1,
-      }));
-    },
-    [currentSymbol]
-  );
-
-  // Cleanup timer on unmount or when leaving practice
+  // Save results when practice completes
   useEffect(() => {
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-    };
-  }, []);
+    if (!isComplete) return;
+
+    let cancelled = false;
+    async function saveResults() {
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user || cancelled) return;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('streak, last_activity_date')
+        .eq('id', user.id)
+        .single();
+
+      const streak = profile?.streak || 0;
+      const lastActivity = profile?.last_activity_date;
+      const accuracy = totalAnswered > 0 ? correctCount / totalAnswered : 0;
+      const xp = calculatePracticeXP(correctCount, totalAnswered, streak);
+      if (!cancelled) setXpEarned(xp);
+
+      // Check if streak will be continued
+      const today = new Date();
+      const localDateStr = today.toLocaleDateString('sv-SE');
+      if (!cancelled && lastActivity && lastActivity !== localDateStr) {
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = yesterday.toLocaleDateString('sv-SE');
+        if (lastActivity === yesterdayStr) {
+          setStreakInfo({ continued: true, newStreak: streak + 1 });
+        }
+      }
+
+      try {
+        await fetch('/api/progress', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chapterId: 'practice',
+            lessonId: `practice-${Date.now()}`,
+            xpEarned: xp,
+            accuracy,
+            symbolResults: Array.from(symbolResults.values()),
+            timezoneOffset: new Date().getTimezoneOffset(),
+          }),
+        });
+      } catch (err) {
+        console.error('Failed to save practice progress:', err);
+        toast.error('Failed to save practice progress');
+      }
+    }
+
+    saveResults();
+    return () => { cancelled = true; };
+  }, [isComplete, correctCount, totalAnswered, symbolResults]);
 
   const toggleSymbol = (symbol: string) => {
     setSelectedSymbols((prev) => {
@@ -164,35 +258,11 @@ export default function PracticePage() {
     return (
       <div className="space-y-6">
         <h1 className="text-2xl font-bold text-(--text-primary)">
-          Free Practice
+          Practice
         </h1>
         <p className="text-sm text-(--text-muted)">
-          Select letters to drill. No lives, no XP — just practice.
+          Select symbols to drill. Earn XP and keep your streak going!
         </p>
-
-        {/* Mode selector */}
-        <div>
-          <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-(--text-muted)">Mode</p>
-          <div className="flex gap-2">
-            {[
-              { value: 'tap' as PracticeMode, label: 'Tap' },
-              { value: 'listen' as PracticeMode, label: 'Listen' },
-              { value: 'identify' as PracticeMode, label: 'Identify' },
-            ].map((m) => (
-              <button
-                key={m.value}
-                onClick={() => setMode(m.value)}
-                className={`flex-1 cursor-pointer rounded-lg px-3 py-2 text-sm font-medium transition-colors active:scale-95 ${
-                  mode === m.value
-                    ? 'bg-(--primary) text-white'
-                    : 'bg-(--surface) text-(--text-muted) ring-1 ring-(--border)'
-                }`}
-              >
-                {m.label}
-              </button>
-            ))}
-          </div>
-        </div>
 
         {/* Category tabs */}
         <div>
@@ -281,7 +351,7 @@ export default function PracticePage() {
 
         <button
           onClick={startPractice}
-          disabled={selectedSymbols.size < minSymbols}
+          disabled={selectedSymbols.size < 2}
           className="w-full cursor-pointer rounded-xl bg-(--primary) px-6 py-4 font-medium text-white transition-colors hover:bg-(--primary-hover) active:scale-95 disabled:opacity-50"
         >
           Start Practice ({(() => {
@@ -293,221 +363,173 @@ export default function PracticePage() {
     );
   }
 
-  // Active practice session
-  const options = currentSymbol
-    ? (() => {
-        const syms = Array.from(selectedSymbols).filter((s) => s !== currentSymbol);
-        const wrong = shuffle(syms).slice(0, 3);
-        return shuffle([currentSymbol, ...wrong]);
-      })()
-    : [];
+  // Game over screen
+  if (isGameOver) {
+    return (
+      <div className="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-[var(--background)] px-4">
+        <div className="w-full max-w-sm text-center">
+          <div className="mb-4 text-6xl">💔</div>
+          <h2 className="mb-2 text-2xl font-bold text-[var(--text-primary)]">
+            Out of Lives
+          </h2>
+          <p className="mb-8 text-[var(--text-muted)]">
+            Don&apos;t worry, practice makes perfect!
+          </p>
+          <div className="flex gap-3">
+            <button
+              onClick={() => {
+                setIsActive(false);
+                setIsGameOver(false);
+              }}
+              className="flex-1 cursor-pointer rounded-xl bg-[var(--surface)] px-6 py-3 font-medium text-[var(--text-primary)] ring-1 ring-[var(--border)] transition-colors active:scale-95"
+            >
+              Back
+            </button>
+            <button
+              onClick={() => startPractice()}
+              className="flex-1 cursor-pointer rounded-xl bg-[var(--primary)] px-6 py-3 font-medium text-white transition-colors active:scale-95"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
+  // Completion screen
+  if (isComplete) {
+    const accuracy = totalAnswered > 0 ? correctCount / totalAnswered : 0;
+    const practicedSymbols = Array.from(symbolResults.keys());
+    return (
+      <div className="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-[var(--background)] px-4">
+        <div className="w-full max-w-sm text-center">
+          <div className="mb-4 text-6xl">🎉</div>
+          <h2 className="mb-2 text-2xl font-bold text-[var(--text-primary)]">
+            Practice Complete!
+          </h2>
+
+          <div className="mb-8 mt-6 grid grid-cols-3 gap-4">
+            <div className="rounded-xl bg-[var(--surface)] p-4 ring-1 ring-[var(--border)]">
+              <div className="text-2xl font-bold text-[var(--primary)]">
+                +{xpEarned}
+              </div>
+              <div className="text-xs text-[var(--text-muted)]">XP</div>
+            </div>
+            <div className="rounded-xl bg-[var(--surface)] p-4 ring-1 ring-[var(--border)]">
+              <div className="text-2xl font-bold text-[var(--success)]">
+                {Math.round(accuracy * 100)}%
+              </div>
+              <div className="text-xs text-[var(--text-muted)]">Accuracy</div>
+            </div>
+            <div className="rounded-xl bg-[var(--surface)] p-4 ring-1 ring-[var(--border)]">
+              <div className="text-2xl font-bold text-[var(--text-primary)]">
+                {correctCount}/{totalAnswered}
+              </div>
+              <div className="text-xs text-[var(--text-muted)]">Correct</div>
+            </div>
+          </div>
+
+          {streakInfo?.continued && (
+            <div className="mb-6 rounded-xl bg-amber-50 p-4 ring-1 ring-amber-200">
+              <div className="text-3xl mb-1">🔥</div>
+              <p className="text-sm font-bold text-amber-700">
+                {streakInfo.newStreak}-day streak!
+              </p>
+              <p className="text-xs text-amber-600">
+                Keep it up — come back tomorrow!
+              </p>
+            </div>
+          )}
+
+          {practicedSymbols.length > 0 && (
+            <div className="mb-6 text-sm text-[var(--text-muted)]">
+              Symbols practiced:{' '}
+              <span className="font-medium text-[var(--text-primary)]">
+                {practicedSymbols.join(', ')}
+              </span>
+            </div>
+          )}
+
+          <button
+            onClick={() => router.push('/dashboard')}
+            className="w-full cursor-pointer rounded-xl bg-[var(--primary)] px-6 py-4 font-medium text-white transition-colors hover:bg-[var(--primary-hover)] active:scale-95"
+          >
+            Continue
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Active practice session — same layout as lessons
   return (
-    <div className="fixed inset-0 z-[60] flex flex-col overflow-hidden bg-(--background)">
-      {/* Top bar — matches lesson layout */}
-      <div className="shrink-0 px-4 pt-4">
+    <div className="fixed inset-0 z-[60] flex flex-col overflow-hidden bg-[var(--background)]">
+      <div className="flex-shrink-0 px-4 pt-4">
         <div className="flex items-center gap-3">
           <button
             type="button"
-            onClick={() => setIsActive(false)}
-            className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-lg text-(--text-muted) transition-colors hover:bg-(--surface) hover:text-(--text-primary) active:scale-90"
-            title="End practice"
+            onClick={() => setShowExitModal(true)}
+            className="flex h-8 w-8 flex-shrink-0 cursor-pointer items-center justify-center rounded-lg text-[var(--text-muted)] transition-colors hover:bg-[var(--surface)] hover:text-[var(--text-primary)] active:scale-90"
+            title="Exit practice"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
             </svg>
           </button>
-          <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--border)' }}>
-            <div
-              className="h-full rounded-full transition-all duration-500 ease-out"
-              style={{
-                width: stats.total > 0 ? `${(stats.correct / stats.total) * 100}%` : '0%',
-                backgroundColor: 'var(--primary)',
-              }}
+          <div className="flex-1">
+            <ProgressBar
+              current={currentIndex}
+              total={exercises.length}
+              lives={lives}
             />
-          </div>
-          <div className="shrink-0 text-sm font-medium text-(--text-muted)">
-            {stats.correct}/{stats.total}
           </div>
         </div>
       </div>
 
-      {/* Content area */}
       <div className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto px-4 py-4">
-        {currentSymbol && (
-          <div className="w-full max-w-lg mx-auto rounded-2xl p-6" style={{ backgroundColor: 'var(--surface)' }}>
-            {/* Feedback — fixed height to prevent layout jump */}
-            <div className="mb-4 text-center h-7">
-              {feedback && (
-                <p className="text-lg font-bold" style={{ color: feedback === 'correct' ? 'var(--success)' : 'var(--error)' }}>
-                  {feedback === 'correct' ? 'Correct!' : 'Incorrect'}
-                </p>
-              )}
+        {exercises[currentIndex] && (
+          <ExerciseCard
+            key={currentIndex}
+            exercise={exercises[currentIndex]}
+            exerciseNumber={currentIndex + 1}
+            totalExercises={exercises.length}
+            onAnswer={handleAnswer}
+            mnemonicGuide={mnemonicGuide}
+          />
+        )}
+      </div>
+
+      {showExitModal && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-sm rounded-2xl bg-[var(--background)] p-6 shadow-xl">
+            <h3 className="mb-2 text-lg font-bold text-[var(--text-primary)]">Quit Practice?</h3>
+            <p className="mb-6 text-sm text-[var(--text-muted)]">
+              Your progress in this session won&apos;t be saved and no XP will be earned.
+            </p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowExitModal(false)}
+                className="flex-1 cursor-pointer rounded-xl bg-[var(--primary)] px-4 py-3 text-sm font-medium text-white transition-colors active:scale-95"
+              >
+                Keep Going
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsActive(false);
+                  setShowExitModal(false);
+                }}
+                className="flex-1 cursor-pointer rounded-xl bg-[var(--surface)] px-4 py-3 text-sm font-medium text-[var(--error)] ring-1 ring-[var(--border)] transition-colors active:scale-95"
+              >
+                Quit
+              </button>
             </div>
-
-            {/* Tap mode */}
-            {mode === 'tap' && (
-              <div className="flex flex-col items-center gap-6">
-                <p className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>
-                  Tap the Morse code for:
-                </p>
-                <div className="text-4xl font-bold sm:text-5xl" style={{ color: 'var(--text-primary)' }}>
-                  {currentSymbol}
-                </div>
-                <MorseInput
-                  onChange={setPracticePattern}
-                  disabled={!!feedback}
-                  feedback={feedback === 'correct' ? 'correct' : feedback === 'wrong' ? 'incorrect' : null}
-                  frozenPattern={lastTappedPattern}
-                  correctPattern={feedback === 'wrong' && currentSymbol ? MORSE_MAP[currentSymbol] : undefined}
-                />
-              </div>
-            )}
-
-            {/* Listen mode */}
-            {mode === 'listen' && (
-              <div className="flex flex-col items-center gap-6">
-                <p className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>
-                  Listen and tap the pattern:
-                </p>
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() => playMorse(MORSE_MAP[currentSymbol])}
-                    className="flex h-12 w-12 items-center justify-center rounded-full transition-colors cursor-pointer active:scale-95"
-                    style={{ backgroundColor: 'var(--primary)', color: '#FFFFFF' }}
-                    title="Play"
-                  >
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0014 8.5v7a4.49 4.49 0 002.5-3.5zM14 3.23v2.06a6.51 6.51 0 010 13.42v2.06A8.51 8.51 0 0014 3.23z" />
-                    </svg>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => playMorse(MORSE_MAP[currentSymbol], 0.5)}
-                    className="flex h-12 items-center gap-1 px-3 rounded-full transition-colors cursor-pointer active:scale-95"
-                    style={{ backgroundColor: 'var(--surface)', border: '2px solid var(--border)', color: 'var(--text-muted)' }}
-                    title="Play slow"
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M3 9v6h4l5 5V4L7 9H3z" />
-                    </svg>
-                    <span className="text-xs font-bold">&frac12;</span>
-                  </button>
-                </div>
-                <MorseInput
-                  onChange={setPracticePattern}
-                  disabled={!!feedback}
-                  feedback={feedback === 'correct' ? 'correct' : feedback === 'wrong' ? 'incorrect' : null}
-                  frozenPattern={lastTappedPattern}
-                  correctPattern={feedback === 'wrong' && currentSymbol ? MORSE_MAP[currentSymbol] : undefined}
-                />
-              </div>
-            )}
-
-            {/* Identify mode */}
-            {mode === 'identify' && (
-              <div className="flex flex-col items-center gap-6">
-                <p className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>
-                  Listen and identify the letter:
-                </p>
-                <MorseDisplay pattern={MORSE_MAP[currentSymbol]} size="lg" />
-                <div className="grid grid-cols-2 gap-3 w-full max-w-xs">
-                  {options.map((symbol) => {
-                    const isCorrectOption = symbol === currentSymbol;
-                    const isSelected = symbol === selectedOption;
-                    const answered = feedback !== null;
-
-                    let optionBg = 'var(--surface)';
-                    let optionBorder = 'var(--border)';
-                    let optionColor = 'var(--text-primary)';
-
-                    if (answered) {
-                      if (isCorrectOption) {
-                        optionBg = '#dcfce7';
-                        optionBorder = '#4ade80';
-                        optionColor = '#166534';
-                      } else if (isSelected) {
-                        optionBg = '#fee2e2';
-                        optionBorder = '#f87171';
-                        optionColor = '#991b1b';
-                      }
-                    }
-
-                    return (
-                      <button
-                        key={symbol}
-                        type="button"
-                        onClick={() => handleIdentifyAnswer(symbol)}
-                        disabled={!!feedback}
-                        className="h-20 sm:h-16 rounded-xl text-2xl font-bold transition-colors cursor-pointer disabled:opacity-100"
-                        style={{
-                          backgroundColor: optionBg,
-                          border: `2px solid ${optionBorder}`,
-                          color: optionColor,
-                        }}
-                        onMouseEnter={(e) => {
-                          if (!feedback) {
-                            e.currentTarget.style.borderColor = 'var(--primary)';
-                            e.currentTarget.style.color = 'var(--primary)';
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!feedback) {
-                            e.currentTarget.style.borderColor = 'var(--border)';
-                            e.currentTarget.style.color = 'var(--text-primary)';
-                          }
-                        }}
-                      >
-                        {symbol}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
           </div>
-        )}
-      </div>
-
-      {/* Bottom button bar — matches lesson layout */}
-      <div
-        className="shrink-0 border-t border-(--border) bg-(--background) px-4 py-3"
-        style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
-      >
-        {mode === 'identify' ? (
-          feedback && (
-            <button
-              type="button"
-              onClick={pickRandom}
-              className="w-full h-14 rounded-xl font-semibold text-white text-lg transition-colors cursor-pointer active:scale-95"
-              style={{ backgroundColor: feedback === 'correct' ? 'var(--success)' : 'var(--primary)' }}
-            >
-              {feedback === 'correct' ? 'Continue' : 'Got It'}
-            </button>
-          )
-        ) : !feedback ? (
-          <button
-            type="button"
-            onClick={handleTapCheck}
-            disabled={!practicePattern}
-            className="w-full h-14 rounded-xl font-semibold text-white text-lg transition-colors cursor-pointer disabled:opacity-40 active:scale-95"
-            style={{ backgroundColor: 'var(--primary)' }}
-          >
-            Check
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={pickRandom}
-            className="w-full h-14 rounded-xl font-semibold text-white text-lg transition-colors cursor-pointer active:scale-95"
-            style={{ backgroundColor: feedback === 'correct' ? 'var(--success)' : 'var(--primary)' }}
-          >
-            {feedback === 'correct' ? 'Continue' : 'Got It'}
-          </button>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

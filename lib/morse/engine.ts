@@ -273,6 +273,82 @@ export function calculateXP(
   return Math.round((baseXP + accuracyBonus) * streakMultiplier);
 }
 
+export function calculatePracticeXP(
+  correct: number,
+  total: number,
+  streak: number
+): number {
+  const baseXP = correct * 3;
+  const accuracy = total > 0 ? correct / total : 0;
+  const accuracyBonus = accuracy >= 0.9 ? 15 : 0;
+  const streakMultiplier = Math.min(streak * 0.1 + 1, 2.0);
+  return Math.round((baseXP + accuracyBonus) * streakMultiplier);
+}
+
+export function generatePracticeSession(
+  selectedSymbols: string[],
+  letterProgress: LetterProgress[]
+): Exercise[] {
+  const progressMap = new Map<string, LetterProgress>();
+  for (const lp of letterProgress) {
+    progressMap.set(lp.symbol, lp);
+  }
+
+  const weighted = selectedSymbols.map((symbol) => {
+    const progress = progressMap.get(symbol);
+    const errorRate =
+      progress && progress.attempt_count > 0
+        ? 1 - progress.correct_count / progress.attempt_count
+        : 0.5;
+    return { symbol, weight: errorRate + 0.1 };
+  });
+
+  const totalWeight = weighted.reduce((sum, r) => sum + r.weight, 0);
+  const exercises: Exercise[] = [];
+
+  for (let i = 0; i < 20; i++) {
+    let rand = Math.random() * totalWeight;
+    let chosen = weighted[0].symbol;
+    for (const entry of weighted) {
+      rand -= entry.weight;
+      if (rand <= 0) {
+        chosen = entry.symbol;
+        break;
+      }
+    }
+
+    const roll = Math.random();
+    let exerciseType: ExerciseType;
+    if (roll < 0.4) {
+      exerciseType = 'tap-recall';
+    } else if (roll < 0.7) {
+      exerciseType = 'identify';
+    } else {
+      exerciseType = 'translate';
+    }
+
+    if (exerciseType === 'identify') {
+      const options = pickRandomOptions(chosen, selectedSymbols, 3);
+      exercises.push({
+        type: 'identify',
+        symbol: chosen,
+        options,
+        showPattern: false,
+        showMnemonic: false,
+      });
+    } else {
+      exercises.push({
+        type: exerciseType,
+        symbol: chosen,
+        showPattern: false,
+        showMnemonic: false,
+      });
+    }
+  }
+
+  return exercises;
+}
+
 export function updateMastery(
   current: MasteryLevel,
   correct: number,
