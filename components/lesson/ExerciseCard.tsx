@@ -176,19 +176,16 @@ export default function ExerciseCard({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [effectiveButtonState, isCheckEnabled, handleCheck, onAnswer, exercise.type, lastCorrect]);
 
-  const feedbackBg =
-    feedback === 'correct'
-      ? 'animate-flash-green'
-      : feedback === 'incorrect'
-        ? 'animate-flash-red'
-        : '';
-
   return (
     <div
-      className={`w-full max-w-lg mx-auto rounded-2xl p-6 ${feedbackBg}`}
-      style={{ backgroundColor: 'var(--surface)' }}
+      className="flex w-full flex-col h-full"
     >
-      <div className="mb-6">
+      <div className="flex min-h-0 flex-1 flex-col items-center justify-center max-w-lg mx-auto w-full">
+      <div
+        className="flex w-full flex-col items-center rounded-2xl p-6"
+        style={{ backgroundColor: 'var(--surface)' }}
+      >
+      <div className="mb-6 w-full">
         <p
           className="text-sm font-medium"
           style={{ color: 'var(--text-muted)' }}
@@ -216,7 +213,7 @@ export default function ExerciseCard({
       )}
 
       {exercise.type === 'tap-assisted' && (
-        <div className="flex flex-col items-center gap-6">
+        <div className="flex flex-col items-center gap-4">
           <p className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>
             Tap the Morse code for this {symbolLabel(exercise.symbol)}:
           </p>
@@ -243,7 +240,7 @@ export default function ExerciseCard({
       )}
 
       {exercise.type === 'tap-recall' && (
-        <div className="flex flex-col items-center gap-6">
+        <div className="flex flex-col items-center gap-4">
           <p className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>
             Tap the Morse code for this {symbolLabel(exercise.symbol)}:
           </p>
@@ -264,7 +261,7 @@ export default function ExerciseCard({
       )}
 
       {exercise.type === 'identify' && (
-        <div className="flex flex-col items-center gap-6">
+        <div className="flex flex-col items-center gap-4">
           <p className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>
             Listen and identify the {symbolLabel(exercise.symbol)}:
           </p>
@@ -325,7 +322,7 @@ export default function ExerciseCard({
       )}
 
       {exercise.type === 'translate' && (
-        <div className="flex flex-col items-center gap-6">
+        <div className="flex flex-col items-center gap-4">
           <p className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>
             What {symbolLabel(exercise.symbol)} is this?
           </p>
@@ -403,9 +400,12 @@ export default function ExerciseCard({
         />
       )}
 
-      {/* Unified bottom button bar */}
+      </div>
+      </div>
+
+      {/* Bottom button bar */}
       <div
-        className="fixed bottom-0 left-0 right-0 z-50 border-t border-(--border) bg-(--background) px-4 py-3"
+        className="shrink-0 border-t border-(--border) bg-(--background) px-4 py-3"
         style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
       >
         {effectiveButtonState === 'check' && (
@@ -490,7 +490,7 @@ function WordListenBody({
   const letters = word.toUpperCase().split('');
 
   return (
-    <div className="flex flex-col items-center gap-6">
+    <div className="flex flex-col items-center gap-4">
       <p className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>
         Listen to the word and type it:
       </p>
@@ -585,7 +585,7 @@ function WordEncodeBody({
   const currentPattern = MORSE_MAP[currentLetter] || '';
 
   return (
-    <div className="flex flex-col items-center gap-6">
+    <div className="flex flex-col items-center gap-4">
       <p className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>
         Tap the Morse code for each character:
       </p>
@@ -648,7 +648,7 @@ function WordSpellBody({
   const letters = word.toUpperCase().split('');
 
   return (
-    <div className="flex flex-col items-center gap-6">
+    <div className="flex flex-col items-center gap-4">
       <p className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>
         Read the Morse patterns and type the word:
       </p>

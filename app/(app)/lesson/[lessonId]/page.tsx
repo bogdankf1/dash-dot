@@ -498,7 +498,7 @@ export default function LessonPage() {
         )}
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto px-4 py-4">
+      <div className="flex min-h-0 flex-1 flex-col px-4 py-4">
         {exercises[currentIndex] && (
           <ExerciseCard
             key={currentIndex}

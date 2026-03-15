@@ -53,7 +53,7 @@ export default function LetterReveal({
   };
 
   return (
-    <div className="flex flex-col items-center gap-8 py-8">
+    <div className="flex flex-col items-center gap-6 py-4">
       <div
         className="text-6xl font-bold"
         style={{ color: 'var(--text-primary)' }}
