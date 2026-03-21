@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import StreakBadge from '@/components/ui/StreakBadge';
 import XPBar from '@/components/ui/XPBar';
 import ChapterCard from '@/components/ui/ChapterCard';
+import NotificationBanner from '@/components/ui/NotificationBanner';
 import { getChapters, getChapterCompletionStatus, getDailyReviewChapter, getDailyReviewLessons } from '@/lib/morse/chapters';
 import type { UserProfile, LetterProgress, LessonHistory, Chapter } from '@/types';
 
@@ -124,6 +125,8 @@ export default function DashboardPage() {
         <StreakBadge streak={profile?.streak ?? 0} />
         <XPBar xp={profile?.xp ?? 0} />
       </div>
+
+      <NotificationBanner lessonCount={lessonHistory.length} />
 
       <button
         type="button"

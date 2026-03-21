@@ -1,5 +1,5 @@
 {
-  "name": "Dash Dot — Learn Morse Code",
+  "name": "Dash Dot",
   "short_name": "DashDot",
   "description": "A Duolingo-style Morse code learning app. Learn Morse code one letter at a time.",
   "start_url": "/",

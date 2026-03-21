@@ -11,7 +11,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: 'Dash Dot — Learn Morse Code',
+  title: 'Dash Dot',
   description: 'A Duolingo-style Morse code learning app. Learn Morse code one letter at a time.',
   manifest: '/manifest.json',
   icons: [
@@ -36,7 +36,7 @@ export default function RootLayout({
       <body className="min-h-screen antialiased">
         <script
           dangerouslySetInnerHTML={{
-            __html: `if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js'))}`,
+            __html: `if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js'))}window.__deferredInstallPrompt=null;window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__deferredInstallPrompt=e;})`,
           }}
         />
         {children}

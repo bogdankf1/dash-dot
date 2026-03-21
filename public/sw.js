@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dashdot-v1';
+const CACHE_NAME = 'dashdot-v2';
 
 // Install: cache app shell
 self.addEventListener('install', (event) => {
@@ -38,5 +38,38 @@ self.addEventListener('fetch', (event) => {
         return response;
       })
       .catch(() => caches.match(request))
+  );
+});
+
+// Push notification handler
+self.addEventListener('push', (event) => {
+  const data = event.data?.json() ?? {};
+  const title = data.title || 'Dash Dot';
+  const options = {
+    body: data.body || 'Time to practice your Morse code!',
+    icon: '/icon-192x192.png',
+    badge: '/icon-192x192.png',
+    data: { url: data.url || '/dashboard' },
+    actions: [
+      { action: 'practice', title: 'Practice Now' },
+      { action: 'dismiss', title: 'Later' },
+    ],
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+// Notification click handler
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const url = event.notification.data?.url || '/dashboard';
+  event.waitUntil(
+    clients.matchAll({ type: 'window' }).then((windowClients) => {
+      for (const client of windowClients) {
+        if (client.url.includes(self.location.origin) && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      return clients.openWindow(url);
+    })
   );
 });

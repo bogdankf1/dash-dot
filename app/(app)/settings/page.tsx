@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
+import { useNotifications } from '@/lib/hooks/useNotifications';
+import { Bell } from 'lucide-react';
 import type { GuideType } from '@/types';
 
 export default function SettingsPage() {
@@ -15,6 +17,8 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
   const [resetting, setResetting] = useState(false);
+  const { permission, isSubscribed, loading: notifLoading, supported, subscribe, unsubscribe } = useNotifications();
+  const [notifToggling, setNotifToggling] = useState(false);
 
   useEffect(() => {
     document.body.style.overflow = showResetModal ? 'hidden' : '';
@@ -152,6 +156,54 @@ export default function SettingsPage() {
             <div
               className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${
                 audioEnabled ? 'translate-x-5' : 'translate-x-0.5'
+              }`}
+            />
+          </button>
+        </div>
+      </div>
+
+      {/* Notifications */}
+      <div className="rounded-xl bg-[var(--surface)] p-4 ring-1 ring-[var(--border)]">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Bell size={18} className="text-[var(--text-muted)]" />
+            <div>
+              <div className="text-sm font-semibold text-[var(--text-primary)]">
+                Daily Reminders
+              </div>
+              <div className="text-xs text-[var(--text-muted)]">
+                {!supported
+                  ? 'Not supported on this browser'
+                  : permission === 'denied'
+                    ? 'Blocked — enable in browser settings'
+                    : 'Get reminded to practice daily'}
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={async () => {
+              if (notifToggling || notifLoading) return;
+              setNotifToggling(true);
+              if (isSubscribed) {
+                const ok = await unsubscribe();
+                if (ok) toast.success('Notifications disabled');
+                else toast.error('Failed to disable notifications');
+              } else {
+                const ok = await subscribe();
+                if (ok) toast.success('Notifications enabled!');
+                else if (Notification.permission === 'denied') toast.error('Notifications blocked by browser');
+                else toast.error('Failed to enable notifications');
+              }
+              setNotifToggling(false);
+            }}
+            disabled={!supported || permission === 'denied' || notifToggling || notifLoading}
+            className={`relative h-7 w-12 cursor-pointer rounded-full transition-colors active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${
+              isSubscribed ? 'bg-[var(--primary)]' : 'bg-[var(--border)]'
+            }`}
+          >
+            <div
+              className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${
+                isSubscribed ? 'translate-x-5' : 'translate-x-0.5'
               }`}
             />
           </button>
