@@ -3,14 +3,22 @@
 import { useEffect, useState } from 'react';
 import { X, Share, MoreVertical, Plus, Download } from 'lucide-react';
 
-type Platform = 'ios-safari' | 'ios-chrome' | 'android' | 'desktop';
+type Platform = 'ios-safari' | 'ios-chrome' | 'ipad-safari' | 'ipad-chrome' | 'android' | 'desktop';
 
 function getPlatform(): Platform | null {
   if (typeof navigator === 'undefined') return null;
   const ua = navigator.userAgent;
-  if (/iPad|iPhone|iPod/.test(ua)) {
-    return /CriOS/.test(ua) ? 'ios-chrome' : 'ios-safari';
+  const isChrome = /CriOS/.test(ua);
+
+  // iPad (older UA includes "iPad", modern iPadOS reports as Macintosh with touch)
+  if (/iPad/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) {
+    return isChrome ? 'ipad-chrome' : 'ipad-safari';
   }
+
+  if (/iPhone|iPod/.test(ua)) {
+    return isChrome ? 'ios-chrome' : 'ios-safari';
+  }
+
   if (/Android/.test(ua)) return 'android';
   return 'desktop';
 }
@@ -139,6 +147,8 @@ export default function InstallPrompt() {
           <div className="mb-4 space-y-3">
             {platform === 'ios-safari' && <IOSSteps />}
             {platform === 'ios-chrome' && <IOSChromeSteps />}
+            {platform === 'ipad-safari' && <IPadSafariSteps />}
+            {platform === 'ipad-chrome' && <IPadChromeSteps />}
             {platform === 'android' && <AndroidSteps />}
             {platform === 'desktop' && <DesktopSteps />}
           </div>
@@ -216,6 +226,62 @@ function IOSChromeSteps() {
         num={2}
         icon={null}
         text="Scroll down in the share sheet"
+      />
+      <Step
+        num={3}
+        icon={<Plus size={16} className="text-[var(--primary)]" />}
+        text='Tap "Add to Home Screen"'
+      />
+      <Step
+        num={4}
+        icon={null}
+        text='Tap "Add" to confirm'
+      />
+    </div>
+  );
+}
+
+function IPadSafariSteps() {
+  return (
+    <div className="space-y-3">
+      <p className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide">In Safari</p>
+      <Step
+        num={1}
+        icon={<Share size={16} className="text-[var(--primary)]" />}
+        text="Tap the Share icon at the top"
+      />
+      <Step
+        num={2}
+        icon={null}
+        text='Tap "View More"'
+      />
+      <Step
+        num={3}
+        icon={<Plus size={16} className="text-[var(--primary)]" />}
+        text='Tap "Add to Home Screen"'
+      />
+      <Step
+        num={4}
+        icon={null}
+        text='Tap "Add" to confirm'
+      />
+    </div>
+  );
+}
+
+function IPadChromeSteps() {
+  return (
+    <div className="space-y-3">
+      <p className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide">In Chrome</p>
+      <Step
+        num={1}
+        icon={<Share size={16} className="text-[var(--primary)]" />}
+        text="Tap the Share icon at the top"
+      />
+      <Step
+        num={2}
+        icon={null}
+        text='Tap "View More"'
       />
       <Step
         num={3}
