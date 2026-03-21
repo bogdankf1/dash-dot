@@ -177,15 +177,20 @@ function IOSSteps() {
       <Step
         num={1}
         icon={<Share size={16} className="text-[var(--primary)]" />}
-        text="Tap the Share button"
+        text="Tap the Share button at the bottom"
       />
       <Step
         num={2}
+        icon={null}
+        text="Scroll down in the share sheet"
+      />
+      <Step
+        num={3}
         icon={<Plus size={16} className="text-[var(--primary)]" />}
         text='Tap "Add to Home Screen"'
       />
       <Step
-        num={3}
+        num={4}
         icon={null}
         text='Tap "Add" to confirm'
       />
@@ -204,11 +209,16 @@ function IOSChromeSteps() {
       />
       <Step
         num={2}
+        icon={null}
+        text="Scroll down in the share sheet"
+      />
+      <Step
+        num={3}
         icon={<Plus size={16} className="text-[var(--primary)]" />}
         text='Tap "Add to Home Screen"'
       />
       <Step
-        num={3}
+        num={4}
         icon={null}
         text='Tap "Add" to confirm'
       />
