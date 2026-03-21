@@ -181,16 +181,21 @@ function IOSSteps() {
       />
       <Step
         num={2}
-        icon={null}
-        text="Scroll down in the menu"
+        icon={<Share size={16} className="text-[var(--primary)]" />}
+        text='Tap "Share"'
       />
       <Step
         num={3}
+        icon={null}
+        text="Scroll down in the share sheet"
+      />
+      <Step
+        num={4}
         icon={<Plus size={16} className="text-[var(--primary)]" />}
         text='Tap "Add to Home Screen"'
       />
       <Step
-        num={4}
+        num={5}
         icon={null}
         text='Tap "Add" to confirm'
       />
