@@ -176,13 +176,13 @@ function IOSSteps() {
       <p className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide">In Safari</p>
       <Step
         num={1}
-        icon={<Share size={16} className="text-[var(--primary)]" />}
-        text="Tap the Share button at the bottom"
+        icon={<MoreVertical size={16} className="text-[var(--primary)]" />}
+        text="Tap the Settings button at the bottom"
       />
       <Step
         num={2}
         icon={null}
-        text="Scroll down in the share sheet"
+        text="Scroll down in the menu"
       />
       <Step
         num={3}
