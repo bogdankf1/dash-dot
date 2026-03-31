@@ -242,6 +242,14 @@ export default function ProfilePage() {
           Badges
         </h3>
         <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
+          {profile.is_loyal_fan && (
+            <div className="flex flex-col items-center gap-1 rounded-lg p-2 text-center">
+              <span className="text-2xl">💖</span>
+              <span className="text-xs leading-tight text-[var(--text-muted)]">
+                #1 Fan
+              </span>
+            </div>
+          )}
           {profile.is_alpha_tester && (
             <div className="flex flex-col items-center gap-1 rounded-lg p-2 text-center">
               <span className="text-2xl">🧪</span>
