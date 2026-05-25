@@ -34,14 +34,8 @@ export async function updateSession(request: NextRequest) {
   }
 
   const isLoginPage = request.nextUrl.pathname === '/login';
-  const isAuthCallback = request.nextUrl.pathname.startsWith('/api/auth');
 
-  if (!user && !isLoginPage && !isAuthCallback) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/login';
-    return NextResponse.redirect(url);
-  }
-
+  // Guests can browse the app; only redirect already-authed users away from /login.
   if (user && isLoginPage) {
     const url = request.nextUrl.clone();
     url.pathname = '/dashboard';

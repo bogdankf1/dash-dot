@@ -3,11 +3,11 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { createClient } from '@/lib/supabase/client';
 import { generateLesson, generateWordLesson, generateDailyReviewLesson, calculateXP, updateMastery } from '@/lib/morse/engine';
 import type { Exercise } from '@/lib/morse/engine';
 import { getChapters, getLessonsForChapter, getDailyReviewLessons } from '@/lib/morse/chapters';
-import type { LetterProgress, GuideType } from '@/types';
+import { getUserAndProfile, getProgress, saveLessonProgress } from '@/lib/storage/dataLayer';
+import type { GuideType } from '@/types';
 import ExerciseCard from '@/components/lesson/ExerciseCard';
 import ProgressBar from '@/components/lesson/ProgressBar';
 import type { MnemonicGuideType } from '@/lib/morse/mnemonics';
@@ -55,31 +55,16 @@ export default function LessonPage() {
     setError(false);
     setLoading(true);
     try {
-      const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) {
-        router.push('/login');
-        return;
-      }
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('selected_guide')
-        .eq('id', user.id)
-        .single();
-
-      const guide = (profile?.selected_guide || 'google') as GuideType;
-      const chapters = getChapters(guide);
-
-      const [{ data: progressData }, { data: historyData }] = await Promise.all([
-        supabase.from('letter_progress').select('*').eq('user_id', user.id),
-        supabase.from('lesson_history').select('lesson_id').eq('user_id', user.id),
+      const [userData, progressData] = await Promise.all([
+        getUserAndProfile(new Date().getTimezoneOffset()),
+        getProgress(),
       ]);
 
-      const letterProgress: LetterProgress[] = progressData || [];
-      const completedLessonIds = new Set((historyData || []).map((h: { lesson_id: string }) => h.lesson_id));
+      const guide = (userData.profile?.selected_guide || 'google') as GuideType;
+      const chapters = getChapters(guide);
+
+      const letterProgress = progressData.letterProgress;
+      const completedLessonIds = new Set(progressData.lessonHistory.map((h) => h.lesson_id));
 
       // Find the lesson config
       let foundLesson = null;
@@ -244,17 +229,8 @@ export default function LessonPage() {
     const meta = lessonMeta;
     let cancelled = false;
     async function saveResults() {
-      const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user || cancelled) return;
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('streak, last_activity_date')
-        .eq('id', user.id)
-        .single();
+      const { profile } = await getUserAndProfile(new Date().getTimezoneOffset());
+      if (cancelled) return;
 
       const streak = profile?.streak || 0;
       const lastActivity = profile?.last_activity_date;
@@ -275,17 +251,13 @@ export default function LessonPage() {
       }
 
       try {
-        await fetch('/api/progress', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chapterId: meta.chapterId,
-            lessonId,
-            xpEarned: xp,
-            accuracy,
-            symbolResults: Array.from(symbolResults.values()),
-            timezoneOffset: new Date().getTimezoneOffset(),
-          }),
+        await saveLessonProgress({
+          chapterId: meta.chapterId,
+          lessonId,
+          xpEarned: xp,
+          accuracy,
+          symbolResults: Array.from(symbolResults.values()),
+          timezoneOffset: new Date().getTimezoneOffset(),
         });
       } catch (err) {
         console.error('Failed to save lesson progress:', err);

@@ -3,22 +3,25 @@
 import { useState, useEffect } from 'react';
 import { Bell, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/auth/authStore';
 import { useNotifications } from '@/lib/hooks/useNotifications';
 
 const STORAGE_KEY = 'dashdot-notification-prompted';
 
 export default function NotificationBanner({ lessonCount }: { lessonCount: number }) {
   const [visible, setVisible] = useState(false);
+  const { status } = useAuth();
   const { supported, isSubscribed, loading, subscribe } = useNotifications();
   const [enabling, setEnabling] = useState(false);
 
   useEffect(() => {
     if (loading) return;
+    if (status !== 'authed') return;
     if (!supported || isSubscribed) return;
     if (lessonCount < 2) return;
     if (localStorage.getItem(STORAGE_KEY)) return;
     setVisible(true);
-  }, [supported, isSubscribed, loading, lessonCount]);
+  }, [status, supported, isSubscribed, loading, lessonCount]);
 
   const handleEnable = async () => {
     setEnabling(true);

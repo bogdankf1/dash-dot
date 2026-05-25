@@ -4,7 +4,9 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
+import { useAuth } from '@/lib/auth/authStore';
 import { useNotifications } from '@/lib/hooks/useNotifications';
+import { getUserAndProfile, updateProfile, resetProgress } from '@/lib/storage/dataLayer';
 import { Bell } from 'lucide-react';
 import type { GuideType } from '@/types';
 
@@ -19,6 +21,8 @@ export default function SettingsPage() {
   const [resetting, setResetting] = useState(false);
   const { permission, isSubscribed, loading: notifLoading, supported, subscribe, unsubscribe } = useNotifications();
   const [notifToggling, setNotifToggling] = useState(false);
+  const { status: authStatus } = useAuth();
+  const isAuthed = authStatus === 'authed';
 
   useEffect(() => {
     document.body.style.overflow = showResetModal ? 'hidden' : '';
@@ -28,9 +32,7 @@ export default function SettingsPage() {
   useEffect(() => {
     async function loadSettings() {
       try {
-        const res = await fetch(`/api/user?timezoneOffset=${new Date().getTimezoneOffset()}`);
-        if (!res.ok) throw new Error('Failed to load');
-        const data = await res.json();
+        const data = await getUserAndProfile(new Date().getTimezoneOffset());
         if (data.profile) {
           setGuide(data.profile.selected_guide || 'google');
         }
@@ -54,13 +56,7 @@ export default function SettingsPage() {
   const saveSettings = async () => {
     setSaving(true);
     try {
-      // Save guide to server
-      const res = await fetch('/api/user', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ selected_guide: guide }),
-      });
-      if (!res.ok) throw new Error('Failed to save');
+      await updateProfile({ selected_guide: guide });
 
       // Save local settings (derive mnemonic guide from learning guide)
       const mnemonicGuide = guide === 'google' ? 'hello-morse' : 'dashdot';
@@ -162,7 +158,8 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* Notifications */}
+      {/* Notifications — authed only */}
+      {isAuthed && (
       <div className="rounded-xl bg-[var(--surface)] p-4 ring-1 ring-[var(--border)]">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -209,6 +206,7 @@ export default function SettingsPage() {
           </button>
         </div>
       </div>
+      )}
 
       {/* Save */}
       <button
@@ -233,17 +231,32 @@ export default function SettingsPage() {
         </button>
       </div>
 
-      {/* Sign Out */}
-      <button
-        onClick={async () => {
-          const supabase = createClient();
-          await supabase.auth.signOut();
-          router.push('/login');
-        }}
-        className="w-full cursor-pointer rounded-xl bg-[var(--surface)] px-6 py-3 text-sm font-medium text-[var(--error)] ring-1 ring-[var(--border)] transition-colors hover:bg-[var(--background)] active:scale-95"
-      >
-        Sign Out
-      </button>
+      {/* Sign In / Sign Out */}
+      {isAuthed ? (
+        <button
+          onClick={async () => {
+            const supabase = createClient();
+            await supabase.auth.signOut();
+            router.push('/dashboard');
+          }}
+          className="w-full cursor-pointer rounded-xl bg-[var(--surface)] px-6 py-3 text-sm font-medium text-[var(--error)] ring-1 ring-[var(--border)] transition-colors hover:bg-[var(--background)] active:scale-95"
+        >
+          Sign Out
+        </button>
+      ) : (
+        <button
+          onClick={async () => {
+            const supabase = createClient();
+            await supabase.auth.signInWithOAuth({
+              provider: 'google',
+              options: { redirectTo: `${window.location.origin}/api/auth/callback` },
+            });
+          }}
+          className="w-full cursor-pointer rounded-xl bg-[var(--primary)] px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-[var(--primary-hover)] active:scale-95"
+        >
+          Sign in to sync your progress
+        </button>
+      )}
 
       {/* Reset Confirmation Modal */}
       {showResetModal && (
@@ -265,8 +278,7 @@ export default function SettingsPage() {
                 onClick={async () => {
                   setResetting(true);
                   try {
-                    const res = await fetch('/api/progress', { method: 'DELETE' });
-                    if (!res.ok) throw new Error('Failed to reset');
+                    await resetProgress();
                     setShowResetModal(false);
                     router.push('/dashboard');
                   } catch (err) {

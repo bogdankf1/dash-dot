@@ -4,6 +4,8 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import Link from 'next/link';
+import { useAuth } from '@/lib/auth/authStore';
+import SignInWall from '@/components/auth/SignInWall';
 import type { UserProfile, LessonHistory, LetterProgress } from '@/types';
 
 type BadgeCheck = (h: LessonHistory[], s: number, xp: number, lp: LetterProgress[]) => boolean;
@@ -91,6 +93,7 @@ function ActivityHeatmap({ last30Days }: { last30Days: { date: string; count: nu
 
 export default function ProfilePage() {
   const router = useRouter();
+  const { status } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [history, setHistory] = useState<LessonHistory[]>([]);
   const [letterProgress, setLetterProgress] = useState<LetterProgress[]>([]);
@@ -125,8 +128,18 @@ export default function ProfilePage() {
   };
 
   useEffect(() => {
-    loadData();
-  }, [router]);
+    if (status === 'authed') loadData();
+    else if (status === 'guest') setLoading(false);
+  }, [status, router]);
+
+  if (status === 'guest') {
+    return (
+      <SignInWall
+        title="Profile"
+        description="Sign in to track your badges, activity, and stats across devices."
+      />
+    );
+  }
 
   if (loading) {
     return (

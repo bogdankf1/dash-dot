@@ -22,3 +22,30 @@ export const updateProfileSchema = z
     selected_guide: z.enum(['google', 'koch', 'alphabetical']).optional(),
   })
   .strict();
+
+export const mergeSnapshotSchema = z.object({
+  profile: z.object({
+    xp: z.number().int().min(0),
+    streak: z.number().int().min(0),
+    last_activity_date: z.string().nullable(),
+    selected_guide: z.enum(['google', 'koch', 'alphabetical']),
+  }),
+  letterProgress: z.array(
+    z.object({
+      symbol: z.string(),
+      mastery_level: z.number().int().min(0).max(3),
+      correct_count: z.number().int().min(0),
+      attempt_count: z.number().int().min(0),
+      last_seen: z.string().nullable(),
+    })
+  ),
+  lessonHistory: z.array(
+    z.object({
+      chapter_id: z.string(),
+      lesson_id: z.string(),
+      xp_earned: z.number().int().min(0),
+      accuracy: z.number().min(0).max(1),
+      completed_at: z.string(),
+    })
+  ),
+});

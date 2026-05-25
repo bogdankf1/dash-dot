@@ -3,9 +3,9 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { createClient } from '@/lib/supabase/client';
 import { generatePracticeSession, calculatePracticeXP, updateMastery } from '@/lib/morse/engine';
 import type { Exercise } from '@/lib/morse/engine';
+import { getUserAndProfile, getProgress, saveLessonProgress } from '@/lib/storage/dataLayer';
 import type { LetterProgress } from '@/types';
 import ExerciseCard from '@/components/lesson/ExerciseCard';
 import ProgressBar from '@/components/lesson/ProgressBar';
@@ -47,14 +47,12 @@ export default function PracticePage() {
     setError(false);
     setLoading(true);
     try {
-      const res = await fetch('/api/progress');
-      if (!res.ok) throw new Error('Failed to load');
-      const data = await res.json();
-      setLetterProgress(data.letterProgress || []);
+      const data = await getProgress();
+      setLetterProgress(data.letterProgress);
 
       // Auto-select letters that are learning or mastered
       const autoSelected = new Set<string>();
-      for (const lp of data.letterProgress || []) {
+      for (const lp of data.letterProgress) {
         if (lp.mastery_level >= 1) {
           autoSelected.add(lp.symbol);
         }
@@ -166,17 +164,8 @@ export default function PracticePage() {
 
     let cancelled = false;
     async function saveResults() {
-      const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user || cancelled) return;
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('streak, last_activity_date')
-        .eq('id', user.id)
-        .single();
+      const { profile } = await getUserAndProfile(new Date().getTimezoneOffset());
+      if (cancelled) return;
 
       const streak = profile?.streak || 0;
       const lastActivity = profile?.last_activity_date;
@@ -197,17 +186,13 @@ export default function PracticePage() {
       }
 
       try {
-        await fetch('/api/progress', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chapterId: 'practice',
-            lessonId: `practice-${Date.now()}`,
-            xpEarned: xp,
-            accuracy,
-            symbolResults: Array.from(symbolResults.values()),
-            timezoneOffset: new Date().getTimezoneOffset(),
-          }),
+        await saveLessonProgress({
+          chapterId: 'practice',
+          lessonId: `practice-${Date.now()}`,
+          xpEarned: xp,
+          accuracy,
+          symbolResults: Array.from(symbolResults.values()),
+          timezoneOffset: new Date().getTimezoneOffset(),
         });
       } catch (err) {
         console.error('Failed to save practice progress:', err);

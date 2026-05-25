@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/auth/authStore';
+import SignInWall from '@/components/auth/SignInWall';
 
 interface LeaderboardEntry {
   id: string;
@@ -14,11 +16,16 @@ interface LeaderboardEntry {
 
 export default function LeaderboardPage() {
   const router = useRouter();
+  const { status } = useAuth();
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (status !== 'authed') {
+      setLoading(false);
+      return;
+    }
     async function loadLeaderboard() {
       try {
         const res = await fetch('/api/leaderboard');
@@ -34,7 +41,16 @@ export default function LeaderboardPage() {
       }
     }
     loadLeaderboard();
-  }, []);
+  }, [status]);
+
+  if (status === 'guest') {
+    return (
+      <SignInWall
+        title="Leaderboard"
+        description="Sign in to compete with other learners and see where you rank."
+      />
+    );
+  }
 
   if (loading) {
     return (

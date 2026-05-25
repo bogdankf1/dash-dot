@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import AlphabetGrid from '@/components/ui/AlphabetGrid';
 import { getChapters, getLessonsForChapter, getDailyReviewChapter, getDailyReviewLessons } from '@/lib/morse/chapters';
+import { getUserAndProfile, getProgress, subscribeToDataChanges } from '@/lib/storage/dataLayer';
 import type { UserProfile, LetterProgress, LessonHistory, Chapter, LessonConfig } from '@/types';
 
 export default function ChapterPage() {
@@ -22,19 +23,13 @@ export default function ChapterPage() {
     setError(false);
     setLoading(true);
     try {
-      const [userRes, progressRes] = await Promise.all([
-        fetch(`/api/user?timezoneOffset=${new Date().getTimezoneOffset()}`),
-        fetch('/api/progress'),
+      const [userData, progressData] = await Promise.all([
+        getUserAndProfile(new Date().getTimezoneOffset()),
+        getProgress(),
       ]);
-
-      if (!userRes.ok || !progressRes.ok) throw new Error('Failed to load');
-
-      const userData = await userRes.json();
       setProfile(userData.profile);
-
-      const progressData = await progressRes.json();
-      setLetterProgress(progressData.letterProgress ?? []);
-      setLessonHistory(progressData.lessonHistory ?? []);
+      setLetterProgress(progressData.letterProgress);
+      setLessonHistory(progressData.lessonHistory);
     } catch (err) {
       console.error('Failed to fetch chapter data:', err);
       setError(true);
@@ -46,6 +41,7 @@ export default function ChapterPage() {
 
   useEffect(() => {
     fetchData();
+    return subscribeToDataChanges(fetchData);
   }, []);
 
   const isDailyReview = chapterId === 'daily-review';

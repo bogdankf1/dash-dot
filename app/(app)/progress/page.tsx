@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import AlphabetGrid from '@/components/ui/AlphabetGrid';
+import { getProgress, subscribeToDataChanges } from '@/lib/storage/dataLayer';
 import type { LetterProgress, LessonHistory } from '@/types';
 
 export default function ProgressPage() {
@@ -16,12 +17,10 @@ export default function ProgressPage() {
     setError(false);
     setLoading(true);
     try {
-      const res = await fetch('/api/progress');
-      if (!res.ok) throw new Error('Failed to load');
-      const data = await res.json();
-      setLetterProgress(data.letterProgress ?? []);
-      setLessonHistory(data.lessonHistory ?? []);
-      setXp(data.xp ?? 0);
+      const data = await getProgress();
+      setLetterProgress(data.letterProgress);
+      setLessonHistory(data.lessonHistory);
+      setXp(data.xp);
     } catch (err) {
       console.error('Failed to fetch progress:', err);
       setError(true);
@@ -33,6 +32,7 @@ export default function ProgressPage() {
 
   useEffect(() => {
     fetchProgress();
+    return subscribeToDataChanges(fetchProgress);
   }, []);
 
   const lettersMastered = letterProgress.filter((lp) => lp.mastery_level === 3).length;

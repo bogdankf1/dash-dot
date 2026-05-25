@@ -8,6 +8,7 @@ import XPBar from '@/components/ui/XPBar';
 import ChapterCard from '@/components/ui/ChapterCard';
 import NotificationBanner from '@/components/ui/NotificationBanner';
 import { getChapters, getChapterCompletionStatus, getDailyReviewChapter, getDailyReviewLessons } from '@/lib/morse/chapters';
+import { getUserAndProfile, getProgress, subscribeToDataChanges } from '@/lib/storage/dataLayer';
 import type { UserProfile, LetterProgress, LessonHistory, Chapter } from '@/types';
 
 export default function DashboardPage() {
@@ -22,19 +23,13 @@ export default function DashboardPage() {
     setError(false);
     setLoading(true);
     try {
-      const [userRes, progressRes] = await Promise.all([
-        fetch(`/api/user?timezoneOffset=${new Date().getTimezoneOffset()}`),
-        fetch('/api/progress'),
+      const [userData, progressData] = await Promise.all([
+        getUserAndProfile(new Date().getTimezoneOffset()),
+        getProgress(),
       ]);
-
-      if (!userRes.ok || !progressRes.ok) throw new Error('Failed to load');
-
-      const userData = await userRes.json();
       setProfile(userData.profile);
-
-      const progressData = await progressRes.json();
-      setLetterProgress(progressData.letterProgress ?? []);
-      setLessonHistory(progressData.lessonHistory ?? []);
+      setLetterProgress(progressData.letterProgress);
+      setLessonHistory(progressData.lessonHistory);
     } catch (err) {
       console.error('Failed to fetch dashboard data:', err);
       setError(true);
@@ -46,6 +41,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchData();
+    return subscribeToDataChanges(fetchData);
   }, []);
 
   const chapters: Chapter[] = profile ? getChapters(profile.selected_guide) : [];

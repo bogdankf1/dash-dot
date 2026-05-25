@@ -2,6 +2,9 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useAuth } from '@/lib/auth/authStore';
+
+const AUTHED_ONLY_HREFS = new Set(['/leaderboard', '/profile']);
 
 const navItems = [
   {
@@ -70,13 +73,18 @@ const navItems = [
 
 export default function BottomNav() {
   const pathname = usePathname();
+  const { status } = useAuth();
 
   if (pathname.startsWith('/lesson/')) return null;
+
+  const visibleItems = status === 'authed'
+    ? navItems
+    : navItems.filter((item) => !AUTHED_ONLY_HREFS.has(item.href));
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-[var(--border)] bg-[var(--surface)]" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
       <div className="mx-auto flex max-w-lg items-center justify-around">
-        {navItems.map((item) => {
+        {visibleItems.map((item) => {
           const isActive = pathname.startsWith(item.href);
           return (
             <Link
