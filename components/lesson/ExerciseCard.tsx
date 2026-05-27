@@ -3,7 +3,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import type { Exercise } from '@/lib/morse/engine';
 import { MORSE_MAP } from '@/lib/morse/codes';
-import { playMorse, playMorseWord } from '@/lib/morse/audio';
 import MorseDisplay from '@/components/lesson/MorseDisplay';
 import MorseInput from '@/components/lesson/MorseInput';
 import LetterReveal from '@/components/lesson/LetterReveal';
@@ -19,6 +18,23 @@ interface ExerciseCardProps {
 
 type Feedback = 'correct' | 'incorrect' | null;
 type ButtonState = 'check' | 'continue';
+
+// Lazy-load the WebAudio engine: most exercise types (introduce, tap-recall,
+// translate, word-encode, word-spell) never play audio, so paying the ~12KB
+// gzipped cost on every lesson load is wasted on those flows.
+let audioModulePromise: Promise<typeof import('@/lib/morse/audio')> | null = null;
+function loadAudioModule() {
+  if (!audioModulePromise) {
+    audioModulePromise = import('@/lib/morse/audio');
+  }
+  return audioModulePromise;
+}
+function playMorse(pattern: string, speed?: number) {
+  void loadAudioModule().then((m) => m.playMorse(pattern, speed));
+}
+function playMorseWord(word: string, speed?: number) {
+  void loadAudioModule().then((m) => m.playMorseWord(word, speed));
+}
 
 function patternToReadable(pattern: string): string {
   return pattern

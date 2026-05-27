@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import type { Chapter } from '@/types';
 
 interface ChapterCardProps {
@@ -8,7 +9,7 @@ interface ChapterCardProps {
   onClick: () => void;
 }
 
-export default function ChapterCard({ chapter, completion, onClick }: ChapterCardProps) {
+function ChapterCard({ chapter, completion, onClick }: ChapterCardProps) {
   const { total, completed, unlocked } = completion;
   const isComplete = completed === total && total > 0;
   const inProgress = completed > 0 && completed < total;
@@ -86,3 +87,5 @@ export default function ChapterCard({ chapter, completion, onClick }: ChapterCar
     </button>
   );
 }
+
+export default memo(ChapterCard);

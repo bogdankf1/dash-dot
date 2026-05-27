@@ -7,7 +7,7 @@ import { generateLesson, generateWordLesson, generateDailyReviewLesson, calculat
 import type { Exercise } from '@/lib/morse/engine';
 import { getChapters, getLessonsForChapter, getDailyReviewLessons } from '@/lib/morse/chapters';
 import { getUserAndProfile, getProgress, saveLessonProgress } from '@/lib/storage/dataLayer';
-import type { GuideType } from '@/types';
+import type { GuideType, LetterProgress } from '@/types';
 import ExerciseCard from '@/components/lesson/ExerciseCard';
 import ProgressBar from '@/components/lesson/ProgressBar';
 import type { MnemonicGuideType } from '@/lib/morse/mnemonics';
@@ -46,6 +46,11 @@ export default function LessonPage() {
     hasMoreLessons: boolean;
   } | null>(null);
 
+  // Snapshot of each symbol's current DB mastery level. We seed per-symbol
+  // result rows from this so a strong-existing-mastery symbol isn't demoted
+  // back to 1 by updateMastery's "0 → 1" promotion branch.
+  const [initialMastery, setInitialMastery] = useState<Map<string, number>>(new Map());
+
   // Track per-symbol results
   const [symbolResults, setSymbolResults] = useState<Map<string, SymbolResult>>(
     new Map()
@@ -63,7 +68,8 @@ export default function LessonPage() {
       const guide = (userData.profile?.selected_guide || 'google') as GuideType;
       const chapters = getChapters(guide);
 
-      const letterProgress = progressData.letterProgress;
+      const letterProgress: LetterProgress[] = progressData.letterProgress;
+      setInitialMastery(new Map(letterProgress.map((lp) => [lp.symbol, lp.mastery_level])));
       const completedLessonIds = new Set(progressData.lessonHistory.map((h) => h.lesson_id));
 
       // Find the lesson config
@@ -189,7 +195,7 @@ export default function LessonPage() {
             symbol: sym,
             correct: 0,
             attempts: 0,
-            masteryLevel: 1,
+            masteryLevel: initialMastery.get(sym) ?? 0,
           };
           existing.attempts += 1;
           if (correct) existing.correct += 1;
@@ -210,7 +216,7 @@ export default function LessonPage() {
         setCurrentIndex((prev) => prev + 1);
       }
     },
-    [currentIndex, exercises]
+    [currentIndex, exercises, initialMastery]
   );
 
   // Auto-skip audio exercises when skipAudio is enabled

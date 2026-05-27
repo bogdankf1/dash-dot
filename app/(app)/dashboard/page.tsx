@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import StreakBadge from '@/components/ui/StreakBadge';
@@ -19,7 +19,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setError(false);
     setLoading(true);
     try {
@@ -37,51 +37,66 @@ export default function DashboardPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchData();
     return subscribeToDataChanges(fetchData);
-  }, []);
+  }, [fetchData]);
 
-  const chapters: Chapter[] = profile ? getChapters(profile.selected_guide) : [];
-  const completedLessonIds = lessonHistory.map((lh) => lh.lesson_id);
-  const completionStatus = chapters.length > 0
-    ? getChapterCompletionStatus(chapters, completedLessonIds)
-    : new Map();
+  const chapters: Chapter[] = useMemo(
+    () => (profile ? getChapters(profile.selected_guide) : []),
+    [profile?.selected_guide]
+  );
 
-  // Check if all regular chapters are complete
-  const allChaptersComplete = chapters.length > 0 && chapters.every((ch) => {
-    const status = completionStatus.get(ch.id);
-    return status && status.completed >= status.total;
-  });
+  const completedLessonIds = useMemo(
+    () => lessonHistory.map((lh) => lh.lesson_id),
+    [lessonHistory]
+  );
 
-  // Daily review chapter status
-  const dailyReviewLessons = getDailyReviewLessons();
-  const dailyReviewCompleted = dailyReviewLessons.filter((l) =>
-    completedLessonIds.includes(l.id)
-  ).length;
+  const completionStatus = useMemo(
+    () =>
+      chapters.length > 0
+        ? getChapterCompletionStatus(chapters, completedLessonIds)
+        : new Map<string, { total: number; completed: number; unlocked: boolean }>(),
+    [chapters, completedLessonIds]
+  );
 
-  function findFirstIncompleteChapter(): string | null {
+  const allChaptersComplete = useMemo(
+    () =>
+      chapters.length > 0 &&
+      chapters.every((ch) => {
+        const status = completionStatus.get(ch.id);
+        return status && status.completed >= status.total;
+      }),
+    [chapters, completionStatus]
+  );
+
+  // Daily review is deterministic per-day; recomputing it across renders inside
+  // the same day yields identical output, but useMemo keeps the reference
+  // stable so child equality checks (React.memo on ChapterCard) hold.
+  const dailyReviewLessons = useMemo(() => getDailyReviewLessons(), []);
+  const dailyReviewCompleted = useMemo(
+    () => dailyReviewLessons.filter((l) => completedLessonIds.includes(l.id)).length,
+    [dailyReviewLessons, completedLessonIds]
+  );
+
+  const handleContinueLearning = useCallback(() => {
     for (const chapter of chapters) {
       const status = completionStatus.get(chapter.id);
       if (status && status.unlocked && status.completed < status.total) {
-        return chapter.id;
+        router.push(`/learn/${chapter.id}`);
+        return;
       }
     }
-    // If all done, go to daily review
     if (allChaptersComplete) {
-      return 'daily-review';
+      router.push('/learn/daily-review');
+      return;
     }
-    return chapters.length > 0 ? chapters[0].id : null;
-  }
-
-  function handleContinueLearning() {
-    const chapterId = findFirstIncompleteChapter();
-    if (chapterId) {
-      router.push(`/learn/${chapterId}`);
+    if (chapters.length > 0) {
+      router.push(`/learn/${chapters[0].id}`);
     }
-  }
+  }, [chapters, completionStatus, allChaptersComplete, router]);
 
   if (loading) {
     return (

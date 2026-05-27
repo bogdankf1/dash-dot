@@ -1,13 +1,10 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
+import { pushSubscriptionSchema } from '@/lib/validation/schemas';
 
-const subscriptionSchema = z.object({
-  endpoint: z.string().url(),
-  keys: z.object({
-    p256dh: z.string().min(1),
-    auth: z.string().min(1),
-  }),
+const unsubscribeSchema = z.object({
+  endpoint: z.string().url().max(2048).optional(),
 });
 
 export async function POST(request: Request) {
@@ -19,7 +16,7 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-  const parsed = subscriptionSchema.safeParse(body);
+  const parsed = pushSubscriptionSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: 'Invalid subscription', details: parsed.error.issues }, { status: 400 });
   }
@@ -55,7 +52,11 @@ export async function DELETE(request: Request) {
   }
 
   const body = await request.json();
-  const { endpoint } = body;
+  const parsed = unsubscribeSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'Invalid request', details: parsed.error.issues }, { status: 400 });
+  }
+  const { endpoint } = parsed.data;
 
   if (endpoint) {
     await supabase

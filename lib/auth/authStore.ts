@@ -4,6 +4,8 @@ import { useSyncExternalStore } from 'react';
 import type { User } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/client';
 import { runSignInMerge } from '@/lib/storage/signInMerge';
+import { resetAll as resetGuestData } from '@/lib/storage/localProgress';
+import { emitDataChanged } from '@/lib/storage/dataLayer';
 
 export type AuthStatus = 'loading' | 'guest' | 'authed';
 
@@ -29,6 +31,14 @@ function setStatus(next: AuthStatus, nextUser: User | null) {
   if (!wasAuthed && willBeAuthed) {
     // Guest → authed transition. Fire merge async; UI updates after refresh.
     void runSignInMerge();
+  }
+
+  // Authed → guest (sign-out): clear any local guest data so the *next* sign-in
+  // (potentially a different user on the same browser) can't accidentally
+  // inherit this account's progress through the merge path.
+  if (wasAuthed && !willBeAuthed) {
+    resetGuestData();
+    emitDataChanged();
   }
 
   notify();

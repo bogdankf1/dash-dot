@@ -135,7 +135,10 @@ export default function PracticePage() {
           symbol: sym,
           correct: 0,
           attempts: 0,
-          masteryLevel: 1,
+          // Seed from current DB mastery so a strong-existing symbol isn't
+          // demoted by the "0 → 1" promotion in updateMastery.
+          masteryLevel:
+            letterProgress.find((lp) => lp.symbol === sym)?.mastery_level ?? 0,
         };
         existing.attempts += 1;
         if (correct) existing.correct += 1;
@@ -155,7 +158,7 @@ export default function PracticePage() {
         setCurrentIndex((prev) => prev + 1);
       }
     },
-    [currentIndex, exercises]
+    [currentIndex, exercises, letterProgress]
   );
 
   // Save results when practice completes
