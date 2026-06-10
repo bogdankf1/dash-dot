@@ -1,14 +1,13 @@
-import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
+import { auth } from '@/auth';
+import { sql } from '@/lib/db/client';
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ userId: string }> }
 ) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
+  const session = await auth();
+  if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -20,11 +19,8 @@ export async function GET(
     return NextResponse.json({ error: 'Invalid user ID' }, { status: 400 });
   }
 
-  const { data, error } = await supabase.rpc('get_public_profile', { p_user_id: userId });
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
+  const rows = await sql`select get_public_profile(${userId}::uuid) as data`;
+  const data = rows[0]?.data;
 
   if (!data) {
     return NextResponse.json({ error: 'User not found' }, { status: 404 });

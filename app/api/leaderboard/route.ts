@@ -1,19 +1,15 @@
-import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
+import { auth } from '@/auth';
+import { sql } from '@/lib/db/client';
 
 export async function GET() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { data, error } = await supabase.rpc('get_leaderboard', { p_limit: 100 });
+  const leaderboard = await sql`select * from get_leaderboard(100)`;
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  return NextResponse.json({ leaderboard: data, currentUserId: user.id });
+  return NextResponse.json({ leaderboard, currentUserId: userId });
 }

@@ -1,8 +1,7 @@
 'use client';
 
-import type { User } from '@supabase/supabase-js';
 import type { LetterProgress, LessonHistory, UserProfile, GuideType } from '@/types';
-import { authStore } from '@/lib/auth/authStore';
+import { authStore, type AuthUser } from '@/lib/auth/authStore';
 import {
   loadProfile,
   loadLetterProgress,
@@ -44,7 +43,7 @@ function synthesizeGuestProfile(): UserProfile {
 }
 
 export async function getUserAndProfile(timezoneOffset: number): Promise<{
-  user: User | null;
+  user: AuthUser | null;
   profile: UserProfile | null;
 }> {
   await authStore.ready();

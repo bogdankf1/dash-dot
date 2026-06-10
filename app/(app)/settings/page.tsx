@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { createClient } from '@/lib/supabase/client';
-import { useAuth } from '@/lib/auth/authStore';
+import { signIn, signOut } from 'next-auth/react';
+import { authStore, useAuth } from '@/lib/auth/authStore';
 import { useNotifications } from '@/lib/hooks/useNotifications';
 import { getUserAndProfile, updateProfile, resetProgress } from '@/lib/storage/dataLayer';
 import { Bell } from 'lucide-react';
@@ -235,8 +235,10 @@ export default function SettingsPage() {
       {isAuthed ? (
         <button
           onClick={async () => {
-            const supabase = createClient();
-            await supabase.auth.signOut();
+            // Sign out without a full reload so authStore can run its
+            // authed → guest cleanup, then navigate.
+            await signOut({ redirect: false });
+            await authStore.refresh();
             router.push('/dashboard');
           }}
           className="w-full cursor-pointer rounded-xl bg-[var(--surface)] px-6 py-3 text-sm font-medium text-[var(--error)] ring-1 ring-[var(--border)] transition-colors hover:bg-[var(--background)] active:scale-95"
@@ -245,13 +247,7 @@ export default function SettingsPage() {
         </button>
       ) : (
         <button
-          onClick={async () => {
-            const supabase = createClient();
-            await supabase.auth.signInWithOAuth({
-              provider: 'google',
-              options: { redirectTo: `${window.location.origin}/api/auth/callback` },
-            });
-          }}
+          onClick={() => signIn('google')}
           className="w-full cursor-pointer rounded-xl bg-[var(--primary)] px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-[var(--primary-hover)] active:scale-95"
         >
           Sign in to sync your progress

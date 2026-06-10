@@ -1,6 +1,6 @@
-import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import webpush from 'web-push';
+import { sql } from '@/lib/db/client';
 
 webpush.setVapidDetails(
   process.env.VAPID_SUBJECT || 'mailto:admin@dashdot.app',
@@ -38,29 +38,25 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const supabase = await createClient();
-
   // Get users with notifications enabled who haven't practiced today
   const today = new Date().toISOString().split('T')[0];
-  const { data: users, error } = await supabase
-    .from('profiles')
-    .select('id, last_activity_date, streak')
-    .eq('notifications_enabled', true)
-    .or(`last_activity_date.is.null,last_activity_date.neq.${today}`);
-
-  if (error || !users) {
-    return NextResponse.json({ error: error?.message || 'No users found' }, { status: 500 });
-  }
+  const users = await sql`
+    select id, last_activity_date, streak
+    from profiles
+    where notifications_enabled = true
+      and (last_activity_date is null or last_activity_date <> ${today}::date)
+  ` as { id: string; last_activity_date: string | null; streak: number }[];
 
   // Fan out subscription lookups in parallel so the wall-clock time scales with
   // the slowest user, not the sum across users.
   const subsByUser = await Promise.all(
     users.map(async (user) => {
-      const { data: subs } = await supabase
-        .from('push_subscriptions')
-        .select('id, endpoint, p256dh, auth')
-        .eq('user_id', user.id);
-      return { user, subs: subs ?? [] };
+      const subs = await sql`
+        select id, endpoint, p256dh, auth
+        from push_subscriptions
+        where user_id = ${user.id}
+      ` as { id: string; endpoint: string; p256dh: string; auth: string }[];
+      return { user, subs };
     })
   );
 
@@ -116,7 +112,7 @@ export async function POST(request: Request) {
   });
 
   if (expiredSubIds.length > 0) {
-    await supabase.from('push_subscriptions').delete().in('id', expiredSubIds);
+    await sql`delete from push_subscriptions where id = any(${expiredSubIds}::uuid[])`;
   }
 
   return NextResponse.json({ sent, failed, users: users.length });

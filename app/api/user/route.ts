@@ -1,12 +1,12 @@
-import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
+import { auth } from '@/auth';
+import { sql } from '@/lib/db/client';
 import { updateProfileSchema } from '@/lib/validation/schemas';
 
 export async function GET(request: Request) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -16,25 +16,17 @@ export async function GET(request: Request) {
 
   // Reset the streak first via an atomic RPC, so the subsequent SELECT sees the
   // post-reset value. The RPC is a no-op when the streak isn't broken.
-  await supabase.rpc('reset_streak_if_broken', {
-    p_user_id: user.id,
-    p_timezone_offset: timezoneOffset,
-  });
+  await sql`select reset_streak_if_broken(${userId}::uuid, ${timezoneOffset})`;
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single();
+  const profileRows = await sql`select * from profiles where id = ${userId}`;
 
-  return NextResponse.json({ user, profile });
+  return NextResponse.json({ user: session.user, profile: profileRows[0] ?? null });
 }
 
 export async function PATCH(request: Request) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -47,16 +39,21 @@ export async function PATCH(request: Request) {
     );
   }
 
-  const { data, error } = await supabase
-    .from('profiles')
-    .update(parsed.data)
-    .eq('id', user.id)
-    .select()
-    .single();
+  const { username, selected_guide } = parsed.data;
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+  // Only the provided fields change; COALESCE keeps the existing value when a
+  // field is absent (the schema forbids clearing either to null).
+  const rows = await sql`
+    update profiles set
+      username = coalesce(${username ?? null}::text, username),
+      selected_guide = coalesce(${selected_guide ?? null}::text, selected_guide)
+    where id = ${userId}
+    returning *
+  `;
+
+  if (rows.length === 0) {
+    return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
   }
 
-  return NextResponse.json({ profile: data });
+  return NextResponse.json({ profile: rows[0] });
 }

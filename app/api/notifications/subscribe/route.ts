@@ -1,6 +1,7 @@
-import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
+import { auth } from '@/auth';
+import { sql } from '@/lib/db/client';
 import { pushSubscriptionSchema } from '@/lib/validation/schemas';
 
 const unsubscribeSchema = z.object({
@@ -8,10 +9,9 @@ const unsubscribeSchema = z.object({
 });
 
 export async function POST(request: Request) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -23,31 +23,23 @@ export async function POST(request: Request) {
 
   const { endpoint, keys } = parsed.data;
 
-  const { error } = await supabase
-    .from('push_subscriptions')
-    .upsert(
-      { user_id: user.id, endpoint, p256dh: keys.p256dh, auth: keys.auth },
-      { onConflict: 'user_id,endpoint' }
-    );
+  await sql`
+    insert into push_subscriptions (user_id, endpoint, p256dh, auth)
+    values (${userId}, ${endpoint}, ${keys.p256dh}, ${keys.auth})
+    on conflict (user_id, endpoint) do update set
+      p256dh = excluded.p256dh,
+      auth = excluded.auth
+  `;
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
-  }
-
-  // Update profile
-  await supabase
-    .from('profiles')
-    .update({ notifications_enabled: true })
-    .eq('id', user.id);
+  await sql`update profiles set notifications_enabled = true where id = ${userId}`;
 
   return NextResponse.json({ ok: true });
 }
 
 export async function DELETE(request: Request) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -59,25 +51,14 @@ export async function DELETE(request: Request) {
   const { endpoint } = parsed.data;
 
   if (endpoint) {
-    await supabase
-      .from('push_subscriptions')
-      .delete()
-      .eq('user_id', user.id)
-      .eq('endpoint', endpoint);
+    await sql`delete from push_subscriptions where user_id = ${userId} and endpoint = ${endpoint}`;
   }
 
   // Check if user has any remaining subscriptions
-  const { data: remaining } = await supabase
-    .from('push_subscriptions')
-    .select('id')
-    .eq('user_id', user.id)
-    .limit(1);
+  const remaining = await sql`select id from push_subscriptions where user_id = ${userId} limit 1`;
 
-  if (!remaining || remaining.length === 0) {
-    await supabase
-      .from('profiles')
-      .update({ notifications_enabled: false })
-      .eq('id', user.id);
+  if (remaining.length === 0) {
+    await sql`update profiles set notifications_enabled = false where id = ${userId}`;
   }
 
   return NextResponse.json({ ok: true });

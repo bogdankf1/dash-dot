@@ -1,12 +1,12 @@
-import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
+import { auth } from '@/auth';
+import { sql } from '@/lib/db/client';
 import { mergeSnapshotSchema } from '@/lib/validation/schemas';
 
 export async function POST(request: Request) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -21,15 +21,17 @@ export async function POST(request: Request) {
 
   const { profile, letterProgress, lessonHistory } = parsed.data;
 
-  const { error } = await supabase.rpc('merge_guest_progress', {
-    p_user_id: user.id,
-    p_profile: profile,
-    p_letter_progress: letterProgress,
-    p_lesson_history: lessonHistory,
-  });
-
-  if (error) {
-    console.error('merge_guest_progress RPC error:', error);
+  try {
+    await sql`
+      select merge_guest_progress(
+        ${userId}::uuid,
+        ${JSON.stringify(profile)}::jsonb,
+        ${JSON.stringify(letterProgress)}::jsonb,
+        ${JSON.stringify(lessonHistory)}::jsonb
+      )
+    `;
+  } catch (err) {
+    console.error('merge_guest_progress error:', err);
     return NextResponse.json({ error: 'Failed to merge progress' }, { status: 500 });
   }
 

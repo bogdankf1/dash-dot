@@ -1,9 +1,19 @@
-import { type NextRequest } from 'next/server';
-import { updateSession } from '@/lib/supabase/middleware';
+import NextAuth from 'next-auth';
+import { authConfig } from './auth.config';
 
-export async function middleware(request: NextRequest) {
-  return await updateSession(request);
-}
+// Edge middleware only decodes the JWT (no DB), so it uses the edge-safe config.
+const { auth } = NextAuth(authConfig);
+
+export default auth((req) => {
+  const { pathname } = req.nextUrl;
+
+  // Authed users have no reason to see /login — bounce them to the dashboard.
+  // (We intentionally do NOT redirect unauthenticated users anywhere; the app
+  // is usable as a guest.)
+  if (req.auth && pathname === '/login') {
+    return Response.redirect(new URL('/dashboard', req.nextUrl));
+  }
+});
 
 export const config = {
   matcher: [

@@ -1,18 +1,25 @@
 'use client';
 
 import { useSyncExternalStore } from 'react';
-import type { User } from '@supabase/supabase-js';
-import { createClient } from '@/lib/supabase/client';
 import { runSignInMerge } from '@/lib/storage/signInMerge';
 import { resetAll as resetGuestData } from '@/lib/storage/localProgress';
 import { emitDataChanged } from '@/lib/storage/dataLayer';
 
 export type AuthStatus = 'loading' | 'guest' | 'authed';
 
+// Minimal user shape exposed to client components. No page reads these fields
+// today (they all branch on `status`), but we mirror the Auth.js session user.
+export type AuthUser = {
+  id?: string;
+  name?: string | null;
+  email?: string | null;
+  image?: string | null;
+};
+
 type Listener = () => void;
 
 const listeners = new Set<Listener>();
-let user: User | null = null;
+let user: AuthUser | null = null;
 let status: AuthStatus = 'loading';
 let initStarted = false;
 let readyPromise: Promise<void> | null = null;
@@ -22,7 +29,7 @@ function notify() {
   listeners.forEach((fn) => fn());
 }
 
-function setStatus(next: AuthStatus, nextUser: User | null) {
+function setStatus(next: AuthStatus, nextUser: AuthUser | null) {
   const wasAuthed = status === 'authed';
   const willBeAuthed = next === 'authed';
   status = next;
@@ -44,6 +51,26 @@ function setStatus(next: AuthStatus, nextUser: User | null) {
   notify();
 }
 
+async function fetchSessionUser(): Promise<AuthUser | null> {
+  try {
+    const res = await fetch('/api/auth/session', { credentials: 'same-origin' });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data && data.user ? (data.user as AuthUser) : null;
+  } catch {
+    return null;
+  }
+}
+
+async function loadAndSet() {
+  const sessionUser = await fetchSessionUser();
+  if (sessionUser) {
+    setStatus('authed', sessionUser);
+  } else {
+    setStatus('guest', null);
+  }
+}
+
 function ensureInit() {
   if (initStarted || typeof window === 'undefined') return;
   initStarted = true;
@@ -52,31 +79,11 @@ function ensureInit() {
     readyResolve = resolve;
   });
 
-  const supabase = createClient();
-
-  supabase.auth.getUser().then(({ data }) => {
-    if (data.user) {
-      setStatus('authed', data.user);
-    } else {
-      setStatus('guest', null);
-    }
-    readyResolve?.();
-  }).catch(() => {
-    setStatus('guest', null);
-    readyResolve?.();
-  });
-
-  supabase.auth.onAuthStateChange((_event, session) => {
-    if (session?.user) {
-      setStatus('authed', session.user);
-    } else {
-      setStatus('guest', null);
-    }
-  });
+  loadAndSet().finally(() => readyResolve?.());
 }
 
 export const authStore = {
-  getUser(): User | null {
+  getUser(): AuthUser | null {
     ensureInit();
     return user;
   },
@@ -94,13 +101,19 @@ export const authStore = {
     if (status !== 'loading') return;
     if (readyPromise) await readyPromise;
   },
+  // Re-read the session after a client-side auth change (e.g. sign-out without a
+  // full reload). Drives the authed → guest cleanup in setStatus.
+  async refresh(): Promise<void> {
+    ensureInit();
+    await loadAndSet();
+  },
 };
 
-function getSnapshot(): { user: User | null; status: AuthStatus } {
+function getSnapshot(): { user: AuthUser | null; status: AuthStatus } {
   return { user: authStore.getUser(), status: authStore.getStatus() };
 }
 
-let cachedSnapshot: { user: User | null; status: AuthStatus } = { user: null, status: 'loading' };
+let cachedSnapshot: { user: AuthUser | null; status: AuthStatus } = { user: null, status: 'loading' };
 
 function getCachedSnapshot() {
   const next = getSnapshot();
