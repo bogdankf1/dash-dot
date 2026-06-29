@@ -16,6 +16,16 @@ export default function AppLayout({
       <main className="mx-auto max-w-lg px-4 py-6">
         {children}
       </main>
+      <footer className="mx-auto flex max-w-lg justify-center px-4 pb-4">
+        <a
+          href="https://built-by-bohdan.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-xs text-[var(--text-muted)] transition-colors hover:text-[var(--primary)]"
+        >
+          Built by Bohdan
+        </a>
+      </footer>
       <BottomNav />
     </div>
   );
