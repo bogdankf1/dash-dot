@@ -43,7 +43,7 @@ export default function AlphabetGrid({ letterProgress, onSymbolClick, symbols }:
         className={`flex flex-col items-center justify-center rounded-lg border p-2 transition-colors ${masteryStyles[mastery]} ${clickable ? 'cursor-pointer hover:opacity-80' : 'cursor-default'}`}
       >
         <span className="text-sm font-bold">{symbol}</span>
-        <span className="text-xs text-[var(--text-muted)]">{morse}</span>
+        <span className="text-xs text-(--text-muted)">{morse}</span>
       </button>
     );
   }
@@ -59,7 +59,7 @@ export default function AlphabetGrid({ letterProgress, onSymbolClick, symbols }:
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+        <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-(--text-muted)">
           Letters
         </h3>
         <div className="grid grid-cols-6 gap-2 md:grid-cols-8">
@@ -67,7 +67,7 @@ export default function AlphabetGrid({ letterProgress, onSymbolClick, symbols }:
         </div>
       </div>
       <div>
-        <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+        <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-(--text-muted)">
           Numbers
         </h3>
         <div className="grid grid-cols-6 gap-2 md:grid-cols-8">

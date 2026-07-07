@@ -77,34 +77,34 @@ export default function SettingsPage() {
   if (loading) {
     return (
       <div className="space-y-4">
-        <div className="h-16 animate-pulse rounded-xl bg-[var(--border)]" />
-        <div className="h-16 animate-pulse rounded-xl bg-[var(--border)]" />
+        <div className="h-16 animate-pulse rounded-xl bg-(--border)" />
+        <div className="h-16 animate-pulse rounded-xl bg-(--border)" />
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-[var(--text-primary)]">Settings</h1>
+      <h1 className="text-2xl font-bold text-(--text-primary)">Settings</h1>
 
       {/* Learning Guide */}
-      <div className="rounded-xl bg-[var(--surface)] p-4 ring-1 ring-[var(--border)]">
-        <label className="mb-2 block text-sm font-semibold text-[var(--text-primary)]">
+      <div className="rounded-xl bg-(--surface) p-4 ring-1 ring-(--border)">
+        <label className="mb-2 block text-sm font-semibold text-(--text-primary)">
           Learning Guide
         </label>
-        <p className="mb-3 text-xs text-[var(--text-muted)]">
+        <p className="mb-3 text-xs text-(--text-muted)">
           Determines the order you learn letters and which mnemonics are used
         </p>
         <select
           value={guide}
           onChange={(e) => setGuide(e.target.value as GuideType)}
-          className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--text-primary)]"
+          className="w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2 text-sm text-(--text-primary)"
         >
           <option value="google">Google Guide (Recommended)</option>
           <option value="koch">Koch Method</option>
           <option value="alphabetical">Alphabetical</option>
         </select>
-        <p className="mt-3 text-xs text-[var(--text-muted)] leading-relaxed">
+        <p className="mt-3 text-xs text-(--text-muted) leading-relaxed">
           {guide === 'google'
             ? 'Visual mnemonics — each letter is associated with a word and illustration that resembles the dot/dash pattern, making it easier to remember.'
             : guide === 'koch'
@@ -114,17 +114,17 @@ export default function SettingsPage() {
       </div>
 
       {/* Input Mode */}
-      <div className="rounded-xl bg-[var(--surface)] p-4 ring-1 ring-[var(--border)]">
-        <label className="mb-2 block text-sm font-semibold text-[var(--text-primary)]">
+      <div className="rounded-xl bg-(--surface) p-4 ring-1 ring-(--border)">
+        <label className="mb-2 block text-sm font-semibold text-(--text-primary)">
           Input Mode
         </label>
-        <p className="mb-3 text-xs text-[var(--text-muted)]">
+        <p className="mb-3 text-xs text-(--text-muted)">
           How you input dots and dashes during exercises
         </p>
         <select
           value={inputMode}
           onChange={(e) => setInputMode(e.target.value as 'single' | 'buttons' | 'both')}
-          className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--text-primary)]"
+          className="w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2 text-sm text-(--text-primary)"
         >
           <option value="both">Both — Tap area + buttons (Recommended)</option>
           <option value="buttons">Two Buttons — Separate dot and dash</option>
@@ -133,20 +133,20 @@ export default function SettingsPage() {
       </div>
 
       {/* Audio */}
-      <div className="rounded-xl bg-[var(--surface)] p-4 ring-1 ring-[var(--border)]">
+      <div className="rounded-xl bg-(--surface) p-4 ring-1 ring-(--border)">
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-sm font-semibold text-[var(--text-primary)]">
+            <div className="text-sm font-semibold text-(--text-primary)">
               Audio
             </div>
-            <div className="text-xs text-[var(--text-muted)]">
+            <div className="text-xs text-(--text-muted)">
               Play morse code sounds
             </div>
           </div>
           <button
             onClick={() => setAudioEnabled(!audioEnabled)}
             className={`relative h-7 w-12 cursor-pointer rounded-full transition-colors active:scale-95 ${
-              audioEnabled ? 'bg-[var(--primary)]' : 'bg-[var(--border)]'
+              audioEnabled ? 'bg-(--primary)' : 'bg-(--border)'
             }`}
           >
             <div
@@ -160,15 +160,15 @@ export default function SettingsPage() {
 
       {/* Notifications — authed only */}
       {isAuthed && (
-      <div className="rounded-xl bg-[var(--surface)] p-4 ring-1 ring-[var(--border)]">
+      <div className="rounded-xl bg-(--surface) p-4 ring-1 ring-(--border)">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Bell size={18} className="text-[var(--text-muted)]" />
+            <Bell size={18} className="text-(--text-muted)" />
             <div>
-              <div className="text-sm font-semibold text-[var(--text-primary)]">
+              <div className="text-sm font-semibold text-(--text-primary)">
                 Daily Reminders
               </div>
-              <div className="text-xs text-[var(--text-muted)]">
+              <div className="text-xs text-(--text-muted)">
                 {!supported
                   ? 'Not supported on this browser'
                   : permission === 'denied'
@@ -195,7 +195,7 @@ export default function SettingsPage() {
             }}
             disabled={!supported || permission === 'denied' || notifToggling || notifLoading}
             className={`relative h-7 w-12 cursor-pointer rounded-full transition-colors active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${
-              isSubscribed ? 'bg-[var(--primary)]' : 'bg-[var(--border)]'
+              isSubscribed ? 'bg-(--primary)' : 'bg-(--border)'
             }`}
           >
             <div
@@ -212,20 +212,20 @@ export default function SettingsPage() {
       <button
         onClick={saveSettings}
         disabled={saving}
-        className="w-full cursor-pointer rounded-xl bg-[var(--primary)] px-6 py-3 font-medium text-white transition-colors hover:bg-[var(--primary-hover)] active:scale-95 disabled:opacity-50"
+        className="w-full cursor-pointer rounded-xl bg-(--primary) px-6 py-3 font-medium text-white transition-colors hover:bg-(--primary-hover) active:scale-95 disabled:opacity-50"
       >
         {saving ? 'Saving...' : 'Save Settings'}
       </button>
 
       {/* Danger Zone */}
-      <div className="rounded-xl bg-[var(--surface)] p-4 ring-1 ring-red-200">
-        <h3 className="mb-1 text-sm font-semibold text-[var(--error)]">Danger Zone</h3>
-        <p className="mb-3 text-xs text-[var(--text-muted)]">
+      <div className="rounded-xl bg-(--surface) p-4 ring-1 ring-red-200">
+        <h3 className="mb-1 text-sm font-semibold text-(--error)">Danger Zone</h3>
+        <p className="mb-3 text-xs text-(--text-muted)">
           This will permanently delete all your progress, XP, and streak data.
         </p>
         <button
           onClick={() => setShowResetModal(true)}
-          className="w-full cursor-pointer rounded-xl bg-red-50 px-6 py-3 text-sm font-medium text-[var(--error)] ring-1 ring-red-200 transition-colors hover:bg-red-100 active:scale-95"
+          className="w-full cursor-pointer rounded-xl bg-red-50 px-6 py-3 text-sm font-medium text-(--error) ring-1 ring-red-200 transition-colors hover:bg-red-100 active:scale-95"
         >
           Reset All Progress
         </button>
@@ -241,14 +241,14 @@ export default function SettingsPage() {
             await authStore.refresh();
             router.push('/dashboard');
           }}
-          className="w-full cursor-pointer rounded-xl bg-[var(--surface)] px-6 py-3 text-sm font-medium text-[var(--error)] ring-1 ring-[var(--border)] transition-colors hover:bg-[var(--background)] active:scale-95"
+          className="w-full cursor-pointer rounded-xl bg-(--surface) px-6 py-3 text-sm font-medium text-(--error) ring-1 ring-(--border) transition-colors hover:bg-(--background) active:scale-95"
         >
           Sign Out
         </button>
       ) : (
         <button
           onClick={() => signIn('google')}
-          className="w-full cursor-pointer rounded-xl bg-[var(--primary)] px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-[var(--primary-hover)] active:scale-95"
+          className="w-full cursor-pointer rounded-xl bg-(--primary) px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-(--primary-hover) active:scale-95"
         >
           Sign in to sync your progress
         </button>
@@ -257,16 +257,16 @@ export default function SettingsPage() {
       {/* Reset Confirmation Modal */}
       {showResetModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-          <div className="w-full max-w-sm rounded-2xl bg-[var(--background)] p-6 shadow-xl">
-            <h3 className="mb-2 text-lg font-bold text-[var(--text-primary)]">Reset All Progress?</h3>
-            <p className="mb-6 text-sm text-[var(--text-muted)]">
+          <div className="w-full max-w-sm rounded-2xl bg-(--background) p-6 shadow-xl">
+            <h3 className="mb-2 text-lg font-bold text-(--text-primary)">Reset All Progress?</h3>
+            <p className="mb-6 text-sm text-(--text-muted)">
               This will permanently delete all your lesson history, letter progress, XP, and streak. This action cannot be undone.
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setShowResetModal(false)}
                 disabled={resetting}
-                className="flex-1 cursor-pointer rounded-xl bg-[var(--surface)] px-4 py-3 text-sm font-medium text-[var(--text-primary)] ring-1 ring-[var(--border)] transition-colors active:scale-95"
+                className="flex-1 cursor-pointer rounded-xl bg-(--surface) px-4 py-3 text-sm font-medium text-(--text-primary) ring-1 ring-(--border) transition-colors active:scale-95"
               >
                 Cancel
               </button>
@@ -285,7 +285,7 @@ export default function SettingsPage() {
                   }
                 }}
                 disabled={resetting}
-                className="flex-1 cursor-pointer rounded-xl bg-[var(--error)] px-4 py-3 text-sm font-medium text-white transition-colors active:scale-95 disabled:opacity-50"
+                className="flex-1 cursor-pointer rounded-xl bg-(--error) px-4 py-3 text-sm font-medium text-white transition-colors active:scale-95 disabled:opacity-50"
               >
                 {resetting ? 'Resetting...' : 'Confirm Reset'}
               </button>

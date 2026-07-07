@@ -55,9 +55,9 @@ export default function LeaderboardPage() {
   if (loading) {
     return (
       <div className="space-y-4">
-        <div className="h-8 w-40 animate-pulse rounded-lg bg-[var(--border)]" />
+        <div className="h-8 w-40 animate-pulse rounded-lg bg-(--border)" />
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="h-16 animate-pulse rounded-xl bg-[var(--border)]" />
+          <div key={i} className="h-16 animate-pulse rounded-xl bg-(--border)" />
         ))}
       </div>
     );
@@ -67,7 +67,7 @@ export default function LeaderboardPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-[var(--text-primary)]">Leaderboard</h1>
+      <h1 className="text-2xl font-bold text-(--text-primary)">Leaderboard</h1>
 
       {/* Podium — top 3 */}
       {entries.length >= 3 && (
@@ -81,20 +81,20 @@ export default function LeaderboardPage() {
       {/* Current user rank card */}
       {currentUserRank >= 0 && (
         <div className="rounded-xl bg-indigo-50 p-3 ring-1 ring-indigo-200">
-          <p className="text-center text-sm font-medium text-[var(--primary)]">
+          <p className="text-center text-sm font-medium text-(--primary)">
             You are #{currentUserRank + 1} with {entries[currentUserRank].xp} XP
           </p>
         </div>
       )}
 
       {/* Full list */}
-      <div className="rounded-xl bg-[var(--surface)] ring-1 ring-[var(--border)] overflow-hidden">
+      <div className="rounded-xl bg-(--surface) ring-1 ring-(--border) overflow-hidden">
         {entries.map((entry, i) => (
           <div
             key={entry.id}
             onClick={() => router.push(entry.id === currentUserId ? '/profile' : `/profile/${entry.id}`)}
-            className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors hover:bg-[var(--background)] ${
-              i !== entries.length - 1 ? 'border-b border-[var(--border)]' : ''
+            className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors hover:bg-(--background) ${
+              i !== entries.length - 1 ? 'border-b border-(--border)' : ''
             } ${entry.id === currentUserId ? 'bg-indigo-50/50' : ''}`}
           >
             {/* Rank */}
@@ -102,7 +102,7 @@ export default function LeaderboardPage() {
               {i < 3 ? (
                 <span className="text-lg">{['🥇', '🥈', '🥉'][i]}</span>
               ) : (
-                <span className="text-sm font-semibold text-[var(--text-muted)]">{i + 1}</span>
+                <span className="text-sm font-semibold text-(--text-muted)">{i + 1}</span>
               )}
             </div>
 
@@ -112,11 +112,11 @@ export default function LeaderboardPage() {
             {/* Name */}
             <div className="flex-1 min-w-0">
               <p className={`text-sm font-medium truncate ${
-                entry.id === currentUserId ? 'text-[var(--primary)]' : 'text-[var(--text-primary)]'
+                entry.id === currentUserId ? 'text-(--primary)' : 'text-(--text-primary)'
               }`}>
                 {entry.username || 'Anonymous'}
                 {entry.id === currentUserId && (
-                  <span className="ml-1.5 text-xs font-normal text-[var(--text-muted)]">(you)</span>
+                  <span className="ml-1.5 text-xs font-normal text-(--text-muted)">(you)</span>
                 )}
               </p>
             </div>
@@ -130,7 +130,7 @@ export default function LeaderboardPage() {
             )}
 
             {/* XP */}
-            <div className="flex items-center gap-1 rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-[var(--primary)]">
+            <div className="flex items-center gap-1 rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-(--primary)">
               <span>⚡</span>
               {entry.xp}
             </div>
@@ -138,7 +138,7 @@ export default function LeaderboardPage() {
         ))}
 
         {entries.length === 0 && (
-          <div className="px-4 py-12 text-center text-sm text-[var(--text-muted)]">
+          <div className="px-4 py-12 text-center text-sm text-(--text-muted)">
             No users yet. Be the first to earn XP!
           </div>
         )}
@@ -155,7 +155,7 @@ function Avatar({ username, avatarUrl }: { username: string | null; avatarUrl: s
       <img
         src={avatarUrl}
         alt={username || 'User'}
-        className="h-9 w-9 rounded-full object-cover ring-1 ring-[var(--border)]"
+        className="h-9 w-9 rounded-full object-cover ring-1 ring-(--border)"
       />
     );
   }
@@ -183,11 +183,11 @@ function PodiumCard({ entry, rank, onNavigate }: { entry: LeaderboardEntry; rank
           <img
             src={entry.avatar_url}
             alt={entry.username || 'User'}
-            className={`rounded-full object-cover ring-2 ring-[var(--border)] ${sizes[rank]}`}
+            className={`rounded-full object-cover ring-2 ring-(--border) ${sizes[rank]}`}
           />
         ) : (
           <div
-            className={`flex items-center justify-center rounded-full font-bold text-white ring-2 ring-[var(--border)] ${sizes[rank]}`}
+            className={`flex items-center justify-center rounded-full font-bold text-white ring-2 ring-(--border) ${sizes[rank]}`}
             style={{ backgroundColor: 'var(--primary)' }}
           >
             {initials}
@@ -195,17 +195,17 @@ function PodiumCard({ entry, rank, onNavigate }: { entry: LeaderboardEntry; rank
         )}
         <span className="absolute -bottom-1 -right-1 text-base">{medals[rank]}</span>
       </div>
-      <p className="text-xs font-medium text-[var(--text-primary)] max-w-[5rem] truncate text-center">
+      <p className="text-xs font-medium text-(--text-primary) max-w-[5rem] truncate text-center">
         {entry.username || 'Anonymous'}
       </p>
-      <div className="flex items-center gap-0.5 text-xs font-semibold text-[var(--primary)]">
+      <div className="flex items-center gap-0.5 text-xs font-semibold text-(--primary)">
         <span>⚡</span>
         {entry.xp}
       </div>
       <div
-        className={`w-20 ${heights[rank]} rounded-t-xl bg-[var(--surface)] ring-1 ring-[var(--border)] flex items-center justify-center`}
+        className={`w-20 ${heights[rank]} rounded-t-xl bg-(--surface) ring-1 ring-(--border) flex items-center justify-center`}
       >
-        <span className="text-2xl font-bold text-[var(--text-muted)] opacity-30">{rank}</span>
+        <span className="text-2xl font-bold text-(--text-muted) opacity-30">{rank}</span>
       </div>
     </div>
   );

@@ -44,22 +44,22 @@ function ChapterCard({ chapter, completion, onClick }: ChapterCardProps) {
   const borderColor = isComplete
     ? 'border-green-200'
     : inProgress
-      ? 'border-[var(--primary)]'
-      : 'border-[var(--border)]';
+      ? 'border-(--primary)'
+      : 'border-(--border)';
 
   const accentBg = isComplete
-    ? 'bg-green-50 text-[var(--success)]'
+    ? 'bg-green-50 text-(--success)'
     : inProgress
-      ? 'bg-indigo-50 text-[var(--primary)]'
-      : 'bg-gray-100 text-[var(--text-muted)]';
+      ? 'bg-indigo-50 text-(--primary)'
+      : 'bg-gray-100 text-(--text-muted)';
 
-  const barColor = isComplete ? 'bg-[var(--success)]' : 'bg-[var(--primary)]';
+  const barColor = isComplete ? 'bg-(--success)' : 'bg-(--primary)';
 
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`flex w-full items-center gap-4 rounded-xl border ${borderColor} bg-[var(--surface)] p-4 text-left shadow-sm cursor-pointer transition-all hover:shadow-md active:scale-[0.98]`}
+      className={`flex w-full items-center gap-4 rounded-xl border ${borderColor} bg-(--surface) p-4 text-left shadow-sm cursor-pointer transition-all hover:shadow-md active:scale-[0.98]`}
     >
       <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full ${accentBg}`}>
         {isComplete ? (
@@ -75,13 +75,13 @@ function ChapterCard({ chapter, completion, onClick }: ChapterCardProps) {
         )}
       </div>
       <div className="min-w-0 flex-1">
-        <h3 className="font-semibold text-[var(--text-primary)]">{chapter.title}</h3>
-        <p className="truncate text-sm text-[var(--text-muted)]">{truncatedSymbols}</p>
+        <h3 className="font-semibold text-(--text-primary)">{chapter.title}</h3>
+        <p className="truncate text-sm text-(--text-muted)">{truncatedSymbols}</p>
         <div className="mt-2 flex items-center gap-2">
           <div className="h-1.5 flex-1 rounded-full bg-gray-200">
             <div className={`h-1.5 rounded-full ${barColor} transition-all`} style={{ width: `${progressPct}%` }} />
           </div>
-          <span className="text-xs text-[var(--text-muted)]">{completed}/{total} lessons</span>
+          <span className="text-xs text-(--text-muted)">{completed}/{total} lessons</span>
         </div>
       </div>
     </button>

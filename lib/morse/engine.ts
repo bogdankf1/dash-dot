@@ -21,10 +21,10 @@ export interface Exercise {
   showMnemonic: boolean;
 }
 
-export function shuffle<T>(arr: T[]): T[] {
+export function shuffle<T>(arr: T[], rand: () => number = Math.random): T[] {
   const result = [...arr];
   for (let i = result.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = Math.floor(rand() * (i + 1));
     [result[i], result[j]] = [result[j], result[i]];
   }
   return result;
@@ -46,15 +46,56 @@ function pickRandomOptions(
   return shuffle([correct, ...wrong]);
 }
 
+interface WeightedSymbol {
+  symbol: string;
+  weight: number;
+}
+
+function toProgressMap(
+  letterProgress: LetterProgress[]
+): Map<string, LetterProgress> {
+  const progressMap = new Map<string, LetterProgress>();
+  for (const lp of letterProgress) {
+    progressMap.set(lp.symbol, lp);
+  }
+  return progressMap;
+}
+
+function errorRateFor(progress: LetterProgress | undefined): number {
+  return progress && progress.attempt_count > 0
+    ? 1 - progress.correct_count / progress.attempt_count
+    : 0.5;
+}
+
+function buildWeights(
+  symbols: string[],
+  progressMap: Map<string, LetterProgress>
+): WeightedSymbol[] {
+  return symbols.map((symbol) => {
+    const progress = progressMap.get(symbol);
+    return { symbol, weight: errorRateFor(progress) + 0.1 };
+  });
+}
+
+function pickWeighted(weighted: WeightedSymbol[], totalWeight: number): string {
+  let rand = Math.random() * totalWeight;
+  let chosen = weighted[0].symbol;
+  for (const entry of weighted) {
+    rand -= entry.weight;
+    if (rand <= 0) {
+      chosen = entry.symbol;
+      break;
+    }
+  }
+  return chosen;
+}
+
 export function generateLesson(
   newSymbols: string[],
   reviewSymbols: string[],
   letterProgress: LetterProgress[]
 ): Exercise[] {
-  const progressMap = new Map<string, LetterProgress>();
-  for (const lp of letterProgress) {
-    progressMap.set(lp.symbol, lp);
-  }
+  const progressMap = toProgressMap(letterProgress);
 
   const allKnown = [...newSymbols, ...reviewSymbols];
   const newExercises: Exercise[][] = [];
@@ -103,28 +144,13 @@ export function generateLesson(
   }
 
   const reviewPool: Exercise[] = [];
-  const weightedReview = reviewSymbols.map((symbol) => {
-    const progress = progressMap.get(symbol);
-    const errorRate =
-      progress && progress.attempt_count > 0
-        ? 1 - progress.correct_count / progress.attempt_count
-        : 0.5;
-    return { symbol, weight: errorRate + 0.1 };
-  });
+  const weightedReview = buildWeights(reviewSymbols, progressMap);
 
   const totalWeight = weightedReview.reduce((sum, r) => sum + r.weight, 0);
 
   const reviewCount = Math.min(5, reviewSymbols.length * 2);
   for (let i = 0; i < reviewCount; i++) {
-    let rand = Math.random() * totalWeight;
-    let chosen = weightedReview[0].symbol;
-    for (const entry of weightedReview) {
-      rand -= entry.weight;
-      if (rand <= 0) {
-        chosen = entry.symbol;
-        break;
-      }
-    }
+    const chosen = pickWeighted(weightedReview, totalWeight);
 
     const exerciseType = Math.random() < 0.5 ? 'tap-recall' : 'identify';
     if (exerciseType === 'identify') {
@@ -206,34 +232,16 @@ export function generateWordLesson(
   }));
 
   // Generate review exercises for individual letters using weighted selection
-  const progressMap = new Map<string, LetterProgress>();
-  for (const lp of letterProgress) {
-    progressMap.set(lp.symbol, lp);
-  }
+  const progressMap = toProgressMap(letterProgress);
 
-  const weightedReview = learnedLetters.map((symbol) => {
-    const progress = progressMap.get(symbol);
-    const errorRate =
-      progress && progress.attempt_count > 0
-        ? 1 - progress.correct_count / progress.attempt_count
-        : 0.5;
-    return { symbol, weight: errorRate + 0.1 };
-  });
+  const weightedReview = buildWeights(learnedLetters, progressMap);
 
   const totalWeight = weightedReview.reduce((sum, r) => sum + r.weight, 0);
   const reviewExercises: Exercise[] = [];
   const reviewCount = Math.min(5, learnedLetters.length);
 
   for (let i = 0; i < reviewCount; i++) {
-    let rand = Math.random() * totalWeight;
-    let chosen = weightedReview[0].symbol;
-    for (const entry of weightedReview) {
-      rand -= entry.weight;
-      if (rand <= 0) {
-        chosen = entry.symbol;
-        break;
-      }
-    }
+    const chosen = pickWeighted(weightedReview, totalWeight);
 
     const exerciseType: ExerciseType = Math.random() < 0.5 ? 'tap-recall' : 'identify';
     if (exerciseType === 'identify') {
@@ -278,36 +286,18 @@ export function generateDailyReviewLesson(
   reviewSymbols: string[],
   letterProgress: LetterProgress[]
 ): Exercise[] {
-  const progressMap = new Map<string, LetterProgress>();
-  for (const lp of letterProgress) {
-    progressMap.set(lp.symbol, lp);
-  }
+  const progressMap = toProgressMap(letterProgress);
 
   const allKnown = [...symbols, ...reviewSymbols];
 
   // All exercises are review-style (no introduce/tap-assisted since user already knows them)
-  const weighted = symbols.map((symbol) => {
-    const progress = progressMap.get(symbol);
-    const errorRate =
-      progress && progress.attempt_count > 0
-        ? 1 - progress.correct_count / progress.attempt_count
-        : 0.5;
-    return { symbol, weight: errorRate + 0.1 };
-  });
+  const weighted = buildWeights(symbols, progressMap);
 
   const totalWeight = weighted.reduce((sum, r) => sum + r.weight, 0);
   const exercises: Exercise[] = [];
 
   for (let i = 0; i < 20; i++) {
-    let rand = Math.random() * totalWeight;
-    let chosen = weighted[0].symbol;
-    for (const entry of weighted) {
-      rand -= entry.weight;
-      if (rand <= 0) {
-        chosen = entry.symbol;
-        break;
-      }
-    }
+    const chosen = pickWeighted(weighted, totalWeight);
 
     const roll = Math.random();
     let exerciseType: ExerciseType;
@@ -369,33 +359,15 @@ export function generatePracticeSession(
   selectedSymbols: string[],
   letterProgress: LetterProgress[]
 ): Exercise[] {
-  const progressMap = new Map<string, LetterProgress>();
-  for (const lp of letterProgress) {
-    progressMap.set(lp.symbol, lp);
-  }
+  const progressMap = toProgressMap(letterProgress);
 
-  const weighted = selectedSymbols.map((symbol) => {
-    const progress = progressMap.get(symbol);
-    const errorRate =
-      progress && progress.attempt_count > 0
-        ? 1 - progress.correct_count / progress.attempt_count
-        : 0.5;
-    return { symbol, weight: errorRate + 0.1 };
-  });
+  const weighted = buildWeights(selectedSymbols, progressMap);
 
   const totalWeight = weighted.reduce((sum, r) => sum + r.weight, 0);
   const exercises: Exercise[] = [];
 
   for (let i = 0; i < 20; i++) {
-    let rand = Math.random() * totalWeight;
-    let chosen = weighted[0].symbol;
-    for (const entry of weighted) {
-      rand -= entry.weight;
-      if (rand <= 0) {
-        chosen = entry.symbol;
-        break;
-      }
-    }
+    const chosen = pickWeighted(weighted, totalWeight);
 
     const roll = Math.random();
     let exerciseType: ExerciseType;

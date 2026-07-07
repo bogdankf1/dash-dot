@@ -21,7 +21,7 @@ export default function AppLayout({
           href="https://built-by-bohdan.com"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-xs text-[var(--text-muted)] transition-colors hover:text-[var(--primary)]"
+          className="text-xs text-(--text-muted) transition-colors hover:text-(--primary)"
         >
           Built by Bohdan
         </a>

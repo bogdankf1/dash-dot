@@ -21,7 +21,7 @@ export default function AuthButton() {
       type="button"
       onClick={handleSignIn}
       disabled={loading}
-      className="cursor-pointer rounded-full bg-[var(--primary)] px-4 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[var(--primary-hover)] active:scale-95 disabled:opacity-60"
+      className="cursor-pointer rounded-full bg-(--primary) px-4 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-(--primary-hover) active:scale-95 disabled:opacity-60"
     >
       {loading ? 'Signing in…' : 'Sign in'}
     </button>

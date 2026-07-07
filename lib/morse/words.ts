@@ -1,3 +1,5 @@
+import { shuffle } from './engine';
+
 // Curated word bank of 2-5 letter English words (A-Z only)
 const WORD_BANK: string[] = [
   // 2-letter words
@@ -64,12 +66,7 @@ export function getWordsForLesson(
   count: number = 8
 ): string[] {
   const available = getAvailableWords(learnedLetters);
-  const shuffled = [...available];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  return shuffled.slice(0, count);
+  return shuffle(available).slice(0, count);
 }
 
 /**

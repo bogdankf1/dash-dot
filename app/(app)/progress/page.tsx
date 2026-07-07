@@ -69,11 +69,11 @@ export default function ProgressPage() {
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
-        <p className="mb-4 text-[var(--text-muted)]">Something went wrong loading your progress.</p>
+        <p className="mb-4 text-(--text-muted)">Something went wrong loading your progress.</p>
         <button
           type="button"
           onClick={fetchProgress}
-          className="cursor-pointer rounded-xl bg-[var(--primary)] px-6 py-3 font-medium text-white transition-colors hover:bg-[var(--primary-hover)] active:scale-95"
+          className="cursor-pointer rounded-xl bg-(--primary) px-6 py-3 font-medium text-white transition-colors hover:bg-(--primary-hover) active:scale-95"
         >
           Try Again
         </button>
@@ -83,29 +83,29 @@ export default function ProgressPage() {
 
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-bold text-[var(--text-primary)]">Your Progress</h1>
+      <h1 className="mb-6 text-2xl font-bold text-(--text-primary)">Your Progress</h1>
 
       <div className="mb-8">
         <AlphabetGrid letterProgress={letterProgress} />
       </div>
 
-      <h2 className="mb-4 text-lg font-bold text-[var(--text-primary)]">Stats</h2>
+      <h2 className="mb-4 text-lg font-bold text-(--text-primary)">Stats</h2>
       <div className="grid grid-cols-2 gap-4">
-        <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 shadow-sm">
-          <p className="text-sm text-[var(--text-muted)]">Total XP</p>
-          <p className="mt-1 text-2xl font-bold text-[var(--primary)]">{totalXp}</p>
+        <div className="rounded-xl border border-(--border) bg-(--surface) p-4 shadow-sm">
+          <p className="text-sm text-(--text-muted)">Total XP</p>
+          <p className="mt-1 text-2xl font-bold text-(--primary)">{totalXp}</p>
         </div>
-        <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 shadow-sm">
-          <p className="text-sm text-[var(--text-muted)]">Letters Mastered</p>
-          <p className="mt-1 text-2xl font-bold text-[var(--success)]">{lettersMastered}</p>
+        <div className="rounded-xl border border-(--border) bg-(--surface) p-4 shadow-sm">
+          <p className="text-sm text-(--text-muted)">Letters Mastered</p>
+          <p className="mt-1 text-2xl font-bold text-(--success)">{lettersMastered}</p>
         </div>
-        <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 shadow-sm">
-          <p className="text-sm text-[var(--text-muted)]">Overall Accuracy</p>
-          <p className="mt-1 text-2xl font-bold text-[var(--text-primary)]">{overallAccuracy}%</p>
+        <div className="rounded-xl border border-(--border) bg-(--surface) p-4 shadow-sm">
+          <p className="text-sm text-(--text-muted)">Overall Accuracy</p>
+          <p className="mt-1 text-2xl font-bold text-(--text-primary)">{overallAccuracy}%</p>
         </div>
-        <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 shadow-sm">
-          <p className="text-sm text-[var(--text-muted)]">Lessons Completed</p>
-          <p className="mt-1 text-2xl font-bold text-[var(--text-primary)]">{lessonsCompleted}</p>
+        <div className="rounded-xl border border-(--border) bg-(--surface) p-4 shadow-sm">
+          <p className="text-sm text-(--text-muted)">Lessons Completed</p>
+          <p className="mt-1 text-2xl font-bold text-(--text-primary)">{lessonsCompleted}</p>
         </div>
       </div>
     </div>

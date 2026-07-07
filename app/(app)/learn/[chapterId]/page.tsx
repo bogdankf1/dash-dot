@@ -98,11 +98,11 @@ export default function ChapterPage() {
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
-        <p className="mb-4 text-[var(--text-muted)]">Something went wrong loading this chapter.</p>
+        <p className="mb-4 text-(--text-muted)">Something went wrong loading this chapter.</p>
         <button
           type="button"
           onClick={fetchData}
-          className="cursor-pointer rounded-xl bg-[var(--primary)] px-6 py-3 font-medium text-white transition-colors hover:bg-[var(--primary-hover)] active:scale-95"
+          className="cursor-pointer rounded-xl bg-(--primary) px-6 py-3 font-medium text-white transition-colors hover:bg-(--primary-hover) active:scale-95"
         >
           Try Again
         </button>
@@ -113,11 +113,11 @@ export default function ChapterPage() {
   if (!chapter) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-8 text-center">
-        <p className="text-[var(--text-muted)]">Chapter not found.</p>
+        <p className="text-(--text-muted)">Chapter not found.</p>
         <button
           type="button"
           onClick={() => router.push('/dashboard')}
-          className="mt-4 cursor-pointer text-[var(--primary)] underline transition-colors active:scale-95"
+          className="mt-4 cursor-pointer text-(--primary) underline transition-colors active:scale-95"
         >
           Back to Dashboard
         </button>
@@ -130,14 +130,14 @@ export default function ChapterPage() {
       <button
         type="button"
         onClick={() => router.push('/dashboard')}
-        className="mb-4 flex cursor-pointer items-center gap-1 text-sm text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] active:scale-95"
+        className="mb-4 flex cursor-pointer items-center gap-1 text-sm text-(--text-muted) transition-colors hover:text-(--text-primary) active:scale-95"
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <polyline points="15 18 9 12 15 6" />
         </svg>
-        <span className="font-medium text-[var(--text-primary)]">{chapter.title}</span>
+        <span className="font-medium text-(--text-primary)">{chapter.title}</span>
       </button>
-      <p className="mb-6 text-[var(--text-muted)]">
+      <p className="mb-6 text-(--text-muted)">
         {isDailyReview ? 'Review all letters with fresh lessons every day' : `Symbols: ${chapter.symbols.join(', ')}`}
       </p>
 
@@ -149,13 +149,13 @@ export default function ChapterPage() {
         <button
           type="button"
           onClick={() => router.push(`/lesson/${nextAvailableLesson.id}`)}
-          className="mb-8 w-full cursor-pointer rounded-xl bg-[var(--primary)] px-6 py-3 text-center font-semibold text-white transition-colors hover:bg-[var(--primary-hover)] active:scale-95"
+          className="mb-8 w-full cursor-pointer rounded-xl bg-(--primary) px-6 py-3 text-center font-semibold text-white transition-colors hover:bg-(--primary-hover) active:scale-95"
         >
           Start Lesson
         </button>
       )}
 
-      <h2 className="mb-4 text-lg font-bold text-[var(--text-primary)]">Lessons</h2>
+      <h2 className="mb-4 text-lg font-bold text-(--text-primary)">Lessons</h2>
       <div className="space-y-3">
         {lessons.map((lesson, index) => {
           const status = getLessonStatus(lesson, index);
@@ -177,16 +177,16 @@ export default function ChapterPage() {
                 isCompleted
                   ? 'border-green-200 bg-green-50 cursor-pointer hover:shadow-md active:scale-[0.98]'
                   : isAvailable
-                    ? 'border-[var(--primary)] bg-[var(--surface)] shadow-sm cursor-pointer hover:shadow-md active:scale-[0.98]'
+                    ? 'border-(--primary) bg-(--surface) shadow-sm cursor-pointer hover:shadow-md active:scale-[0.98]'
                     : 'border-gray-200 bg-gray-50 opacity-60'
               }`}
             >
               <div
                 className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full ${
                   isCompleted
-                    ? 'bg-[var(--success)] text-white'
+                    ? 'bg-(--success) text-white'
                     : isAvailable
-                      ? 'bg-[var(--primary)] text-white'
+                      ? 'bg-(--primary) text-white'
                       : 'bg-gray-200 text-gray-400'
                 }`}
               >
@@ -205,12 +205,12 @@ export default function ChapterPage() {
               <div className="min-w-0 flex-1">
                 <h3
                   className={`font-semibold ${
-                    isLocked ? 'text-gray-400' : 'text-[var(--text-primary)]'
+                    isLocked ? 'text-gray-400' : 'text-(--text-primary)'
                   }`}
                 >
                   {lesson.isWordLesson ? 'Word Practice' : isDailyReview ? `Review ${index + 1}` : `Lesson ${index + 1}`}
                 </h3>
-                <p className={`text-sm ${isLocked ? 'text-gray-400' : 'text-[var(--text-muted)]'}`}>
+                <p className={`text-sm ${isLocked ? 'text-gray-400' : 'text-(--text-muted)'}`}>
                   {lesson.isWordLesson ? (
                     'Practice real words with letters you\'ve learned'
                   ) : isDailyReview ? (
@@ -228,10 +228,10 @@ export default function ChapterPage() {
                 </p>
               </div>
               {isCompleted && (
-                <span className="text-xs font-medium text-[var(--success)]">Done</span>
+                <span className="text-xs font-medium text-(--success)">Done</span>
               )}
               {isAvailable && (
-                <span className="text-xs font-medium text-[var(--primary)]">Start</span>
+                <span className="text-xs font-medium text-(--primary)">Start</span>
               )}
             </button>
           );

@@ -54,8 +54,8 @@ function ActivityHeatmap({ last30Days }: { last30Days: { date: string; count: nu
   }, [activeDay, dismiss]);
 
   return (
-    <div className="rounded-xl bg-[var(--surface)] p-4 ring-1 ring-[var(--border)]">
-      <h3 className="mb-3 text-sm font-semibold text-[var(--text-primary)]">
+    <div className="rounded-xl bg-(--surface) p-4 ring-1 ring-(--border)">
+      <h3 className="mb-3 text-sm font-semibold text-(--text-primary)">
         Activity (Last 30 Days)
       </h3>
       <div ref={containerRef} className="grid grid-cols-10 gap-1">
@@ -78,10 +78,10 @@ function ActivityHeatmap({ last30Days }: { last30Days: { date: string; count: nu
             onClick={() => setActiveDay(activeDay === i ? null : i)}
           >
             {activeDay === i && (
-              <div className="absolute bottom-full left-1/2 z-10 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded-lg bg-[var(--text-primary)] px-2.5 py-1.5 text-xs text-[var(--background)] shadow-lg">
+              <div className="absolute bottom-full left-1/2 z-10 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded-lg bg-(--text-primary) px-2.5 py-1.5 text-xs text-(--background) shadow-lg">
                 <div className="font-medium">{day.date}</div>
                 <div>{day.count} lesson{day.count !== 1 ? 's' : ''} &middot; {day.xp} XP</div>
-                <div className="absolute left-1/2 top-full -translate-x-1/2 border-4 border-transparent border-t-[var(--text-primary)]" />
+                <div className="absolute left-1/2 top-full -translate-x-1/2 border-4 border-transparent border-t-(--text-primary)" />
               </div>
             )}
           </div>
@@ -144,8 +144,8 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <div className="space-y-4">
-        <div className="h-24 animate-pulse rounded-xl bg-[var(--border)]" />
-        <div className="h-40 animate-pulse rounded-xl bg-[var(--border)]" />
+        <div className="h-24 animate-pulse rounded-xl bg-(--border)" />
+        <div className="h-40 animate-pulse rounded-xl bg-(--border)" />
       </div>
     );
   }
@@ -153,11 +153,11 @@ export default function ProfilePage() {
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
-        <p className="mb-4 text-[var(--text-muted)]">Something went wrong loading your profile.</p>
+        <p className="mb-4 text-(--text-muted)">Something went wrong loading your profile.</p>
         <button
           type="button"
           onClick={loadData}
-          className="cursor-pointer rounded-xl bg-[var(--primary)] px-6 py-3 font-medium text-white transition-colors hover:bg-[var(--primary-hover)] active:scale-95"
+          className="cursor-pointer rounded-xl bg-(--primary) px-6 py-3 font-medium text-white transition-colors hover:bg-(--primary-hover) active:scale-95"
         >
           Try Again
         </button>
@@ -193,7 +193,7 @@ export default function ProfilePage() {
   return (
     <div className="space-y-6">
       {/* Profile Header */}
-      <div className="flex items-center gap-4 rounded-xl bg-[var(--surface)] p-4 ring-1 ring-[var(--border)]">
+      <div className="flex items-center gap-4 rounded-xl bg-(--surface) p-4 ring-1 ring-(--border)">
         {profile.avatar_url ? (
           <img
             src={profile.avatar_url}
@@ -201,21 +201,21 @@ export default function ProfilePage() {
             className="h-16 w-16 rounded-full"
           />
         ) : (
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--primary)] text-2xl font-bold text-white">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-(--primary) text-2xl font-bold text-white">
             {(profile.username || '?')[0].toUpperCase()}
           </div>
         )}
         <div className="flex-1">
-          <h2 className="text-xl font-bold text-[var(--text-primary)]">
+          <h2 className="text-xl font-bold text-(--text-primary)">
             {profile.username || 'Learner'}
           </h2>
-          <p className="text-sm text-[var(--text-muted)]">
+          <p className="text-sm text-(--text-muted)">
             Joined {new Date(profile.created_at).toLocaleDateString()}
           </p>
         </div>
         <Link
           href="/settings"
-          className="flex h-10 w-10 items-center justify-center rounded-lg text-[var(--text-muted)] transition-colors hover:bg-[var(--background)] hover:text-[var(--text-primary)]"
+          className="flex h-10 w-10 items-center justify-center rounded-lg text-(--text-muted) transition-colors hover:bg-(--background) hover:text-(--text-primary)"
         >
           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 010 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 010-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28z" />
@@ -226,23 +226,23 @@ export default function ProfilePage() {
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="rounded-xl bg-[var(--surface)] p-4 text-center ring-1 ring-[var(--border)]">
-          <div className="text-2xl font-bold text-[var(--primary)]">
+        <div className="rounded-xl bg-(--surface) p-4 text-center ring-1 ring-(--border)">
+          <div className="text-2xl font-bold text-(--primary)">
             {profile.xp}
           </div>
-          <div className="text-xs text-[var(--text-muted)]">Total XP</div>
+          <div className="text-xs text-(--text-muted)">Total XP</div>
         </div>
-        <div className="rounded-xl bg-[var(--surface)] p-4 text-center ring-1 ring-[var(--border)]">
+        <div className="rounded-xl bg-(--surface) p-4 text-center ring-1 ring-(--border)">
           <div className="text-2xl font-bold text-amber-500">
             {profile.streak}
           </div>
-          <div className="text-xs text-[var(--text-muted)]">Day Streak</div>
+          <div className="text-xs text-(--text-muted)">Day Streak</div>
         </div>
-        <div className="rounded-xl bg-[var(--surface)] p-4 text-center ring-1 ring-[var(--border)]">
-          <div className="text-2xl font-bold text-[var(--text-primary)]">
+        <div className="rounded-xl bg-(--surface) p-4 text-center ring-1 ring-(--border)">
+          <div className="text-2xl font-bold text-(--text-primary)">
             {history.length}
           </div>
-          <div className="text-xs text-[var(--text-muted)]">Lessons</div>
+          <div className="text-xs text-(--text-muted)">Lessons</div>
         </div>
       </div>
 
@@ -250,15 +250,15 @@ export default function ProfilePage() {
       <ActivityHeatmap last30Days={last30Days} />
 
       {/* Badges */}
-      <div className="rounded-xl bg-[var(--surface)] p-4 ring-1 ring-[var(--border)]">
-        <h3 className="mb-3 text-sm font-semibold text-[var(--text-primary)]">
+      <div className="rounded-xl bg-(--surface) p-4 ring-1 ring-(--border)">
+        <h3 className="mb-3 text-sm font-semibold text-(--text-primary)">
           Badges
         </h3>
         <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
           {profile.is_loyal_fan && (
             <div className="flex flex-col items-center gap-1 rounded-lg p-2 text-center">
               <span className="text-2xl">💖</span>
-              <span className="text-xs leading-tight text-[var(--text-muted)]">
+              <span className="text-xs leading-tight text-(--text-muted)">
                 #1 Fan
               </span>
             </div>
@@ -266,7 +266,7 @@ export default function ProfilePage() {
           {profile.is_alpha_tester && (
             <div className="flex flex-col items-center gap-1 rounded-lg p-2 text-center">
               <span className="text-2xl">🧪</span>
-              <span className="text-xs leading-tight text-[var(--text-muted)]">
+              <span className="text-xs leading-tight text-(--text-muted)">
                 Alpha Tester
               </span>
             </div>
@@ -281,7 +281,7 @@ export default function ProfilePage() {
                 }`}
               >
                 <span className="text-2xl">{badge.icon}</span>
-                <span className="text-xs leading-tight text-[var(--text-muted)]">
+                <span className="text-xs leading-tight text-(--text-muted)">
                   {badge.label}
                 </span>
               </div>

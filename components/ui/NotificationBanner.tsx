@@ -43,25 +43,25 @@ export default function NotificationBanner({ lessonCount }: { lessonCount: numbe
   if (!visible) return null;
 
   return (
-    <div className="mb-4 rounded-xl bg-[var(--surface)] p-4 ring-1 ring-[var(--border)]">
+    <div className="mb-4 rounded-xl bg-(--surface) p-4 ring-1 ring-(--border)">
       <div className="flex items-start gap-3">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--primary)]/10">
-          <Bell size={18} className="text-[var(--primary)]" />
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-(--primary)/10">
+          <Bell size={18} className="text-(--primary)" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-[var(--text-primary)]">Never miss a streak!</p>
-          <p className="text-xs text-[var(--text-muted)] mt-0.5">Get daily reminders to keep your progress going.</p>
+          <p className="text-sm font-semibold text-(--text-primary)">Never miss a streak!</p>
+          <p className="text-xs text-(--text-muted) mt-0.5">Get daily reminders to keep your progress going.</p>
           <div className="mt-3 flex gap-2">
             <button
               onClick={handleEnable}
               disabled={enabling}
-              className="cursor-pointer rounded-lg bg-[var(--primary)] px-4 py-1.5 text-xs font-medium text-white transition-colors hover:bg-[var(--primary-hover)] active:scale-95 disabled:opacity-50"
+              className="cursor-pointer rounded-lg bg-(--primary) px-4 py-1.5 text-xs font-medium text-white transition-colors hover:bg-(--primary-hover) active:scale-95 disabled:opacity-50"
             >
               {enabling ? 'Enabling...' : 'Enable'}
             </button>
             <button
               onClick={handleDismiss}
-              className="cursor-pointer rounded-lg px-4 py-1.5 text-xs font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--border)] active:scale-95"
+              className="cursor-pointer rounded-lg px-4 py-1.5 text-xs font-medium text-(--text-muted) transition-colors hover:bg-(--border) active:scale-95"
             >
               Not now
             </button>
@@ -69,7 +69,7 @@ export default function NotificationBanner({ lessonCount }: { lessonCount: numbe
         </div>
         <button
           onClick={handleDismiss}
-          className="shrink-0 rounded-lg p-1 text-[var(--text-muted)] hover:bg-[var(--border)] cursor-pointer"
+          className="shrink-0 rounded-lg p-1 text-(--text-muted) hover:bg-(--border) cursor-pointer"
         >
           <X size={16} />
         </button>

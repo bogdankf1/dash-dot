@@ -118,11 +118,11 @@ export default function DashboardPage() {
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
-        <p className="mb-4 text-[var(--text-muted)]">Something went wrong loading your dashboard.</p>
+        <p className="mb-4 text-(--text-muted)">Something went wrong loading your dashboard.</p>
         <button
           type="button"
           onClick={fetchData}
-          className="cursor-pointer rounded-xl bg-[var(--primary)] px-6 py-3 font-medium text-white transition-colors hover:bg-[var(--primary-hover)] active:scale-95"
+          className="cursor-pointer rounded-xl bg-(--primary) px-6 py-3 font-medium text-white transition-colors hover:bg-(--primary-hover) active:scale-95"
         >
           Try Again
         </button>
@@ -142,12 +142,12 @@ export default function DashboardPage() {
       <button
         type="button"
         onClick={handleContinueLearning}
-        className="mb-8 w-full cursor-pointer rounded-xl bg-[var(--primary)] px-6 py-3 text-center font-semibold text-white transition-colors hover:bg-[var(--primary-hover)] active:scale-95"
+        className="mb-8 w-full cursor-pointer rounded-xl bg-(--primary) px-6 py-3 text-center font-semibold text-white transition-colors hover:bg-(--primary-hover) active:scale-95"
       >
         {allChaptersComplete ? 'Daily Review' : 'Continue Learning'}
       </button>
 
-      <h2 className="mb-4 text-lg font-bold text-[var(--text-primary)]">Chapters</h2>
+      <h2 className="mb-4 text-lg font-bold text-(--text-primary)">Chapters</h2>
       <div className="space-y-3">
         {chapters.map((chapter) => {
           const status = completionStatus.get(chapter.id) ?? {

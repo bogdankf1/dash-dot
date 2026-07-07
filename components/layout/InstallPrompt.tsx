@@ -109,27 +109,27 @@ export default function InstallPrompt() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-      <div className="w-full max-w-sm rounded-2xl bg-[var(--background)] p-6 shadow-xl animate-in slide-in-from-bottom duration-300">
+      <div className="w-full max-w-sm rounded-2xl bg-(--background) p-6 shadow-xl animate-in slide-in-from-bottom duration-300">
         {/* Header */}
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-3">
             <img src="/icon-192x192.png" alt="Dash Dot" className="h-12 w-12 rounded-xl" />
             <div>
-              <h3 className="text-lg font-bold text-[var(--text-primary)]">Install Dash Dot</h3>
-              <p className="text-xs text-[var(--text-muted)]">Add to your home screen</p>
+              <h3 className="text-lg font-bold text-(--text-primary)">Install Dash Dot</h3>
+              <p className="text-xs text-(--text-muted)">Add to your home screen</p>
             </div>
           </div>
           <button
             onClick={handleClose}
-            className="rounded-lg p-1 text-[var(--text-muted)] hover:bg-[var(--surface)] cursor-pointer"
+            className="rounded-lg p-1 text-(--text-muted) hover:bg-(--surface) cursor-pointer"
           >
             <X size={20} />
           </button>
         </div>
 
         {/* Benefits */}
-        <div className="mb-5 rounded-xl bg-[var(--surface)] p-3 ring-1 ring-[var(--border)]">
-          <p className="text-xs text-[var(--text-muted)] leading-relaxed">
+        <div className="mb-5 rounded-xl bg-(--surface) p-3 ring-1 ring-(--border)">
+          <p className="text-xs text-(--text-muted) leading-relaxed">
             Get the full app experience — faster loading, offline access, and push notifications for streak reminders.
           </p>
         </div>
@@ -138,7 +138,7 @@ export default function InstallPrompt() {
         {hasNativePrompt ? (
           <button
             onClick={handleNativeInstall}
-            className="mb-4 w-full cursor-pointer rounded-xl bg-[var(--primary)] px-6 py-3 font-medium text-white transition-colors hover:bg-[var(--primary-hover)] active:scale-95 flex items-center justify-center gap-2"
+            className="mb-4 w-full cursor-pointer rounded-xl bg-(--primary) px-6 py-3 font-medium text-white transition-colors hover:bg-(--primary-hover) active:scale-95 flex items-center justify-center gap-2"
           >
             <Download size={18} />
             Install App
@@ -157,7 +157,7 @@ export default function InstallPrompt() {
         {/* Don't show again */}
         <button
           onClick={handleDontShowAgain}
-          className="w-full text-center text-xs text-[var(--text-muted)] cursor-pointer hover:underline"
+          className="w-full text-center text-xs text-(--text-muted) cursor-pointer hover:underline"
         >
           Don&apos;t show again
         </button>
@@ -169,10 +169,10 @@ export default function InstallPrompt() {
 function Step({ num, icon, text }: { num: number; icon: React.ReactNode; text: string }) {
   return (
     <div className="flex items-center gap-3">
-      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--primary)] text-xs font-bold text-white">
+      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-(--primary) text-xs font-bold text-white">
         {num}
       </div>
-      <div className="flex items-center gap-2 text-sm text-[var(--text-primary)]">
+      <div className="flex items-center gap-2 text-sm text-(--text-primary)">
         {icon}
         <span>{text}</span>
       </div>
@@ -183,15 +183,15 @@ function Step({ num, icon, text }: { num: number; icon: React.ReactNode; text: s
 function IOSSteps() {
   return (
     <div className="space-y-3">
-      <p className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide">In Safari</p>
+      <p className="text-xs font-semibold text-(--text-muted) uppercase tracking-wide">In Safari</p>
       <Step
         num={1}
-        icon={<MoreVertical size={16} className="text-[var(--primary)]" />}
+        icon={<MoreVertical size={16} className="text-(--primary)" />}
         text="Tap the Settings button at the bottom"
       />
       <Step
         num={2}
-        icon={<Share size={16} className="text-[var(--primary)]" />}
+        icon={<Share size={16} className="text-(--primary)" />}
         text='Tap "Share"'
       />
       <Step
@@ -201,7 +201,7 @@ function IOSSteps() {
       />
       <Step
         num={4}
-        icon={<Plus size={16} className="text-[var(--primary)]" />}
+        icon={<Plus size={16} className="text-(--primary)" />}
         text='Tap "Add to Home Screen"'
       />
       <Step
@@ -216,10 +216,10 @@ function IOSSteps() {
 function IOSChromeSteps() {
   return (
     <div className="space-y-3">
-      <p className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide">In Chrome</p>
+      <p className="text-xs font-semibold text-(--text-muted) uppercase tracking-wide">In Chrome</p>
       <Step
         num={1}
-        icon={<Share size={16} className="text-[var(--primary)]" />}
+        icon={<Share size={16} className="text-(--primary)" />}
         text="Tap the Share button"
       />
       <Step
@@ -229,7 +229,7 @@ function IOSChromeSteps() {
       />
       <Step
         num={3}
-        icon={<Plus size={16} className="text-[var(--primary)]" />}
+        icon={<Plus size={16} className="text-(--primary)" />}
         text='Tap "Add to Home Screen"'
       />
       <Step
@@ -244,10 +244,10 @@ function IOSChromeSteps() {
 function IPadSafariSteps() {
   return (
     <div className="space-y-3">
-      <p className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide">In Safari</p>
+      <p className="text-xs font-semibold text-(--text-muted) uppercase tracking-wide">In Safari</p>
       <Step
         num={1}
-        icon={<Share size={16} className="text-[var(--primary)]" />}
+        icon={<Share size={16} className="text-(--primary)" />}
         text="Tap the Share icon at the top"
       />
       <Step
@@ -257,7 +257,7 @@ function IPadSafariSteps() {
       />
       <Step
         num={3}
-        icon={<Plus size={16} className="text-[var(--primary)]" />}
+        icon={<Plus size={16} className="text-(--primary)" />}
         text='Tap "Add to Home Screen"'
       />
       <Step
@@ -272,10 +272,10 @@ function IPadSafariSteps() {
 function IPadChromeSteps() {
   return (
     <div className="space-y-3">
-      <p className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide">In Chrome</p>
+      <p className="text-xs font-semibold text-(--text-muted) uppercase tracking-wide">In Chrome</p>
       <Step
         num={1}
-        icon={<Share size={16} className="text-[var(--primary)]" />}
+        icon={<Share size={16} className="text-(--primary)" />}
         text="Tap the Share icon at the top"
       />
       <Step
@@ -285,7 +285,7 @@ function IPadChromeSteps() {
       />
       <Step
         num={3}
-        icon={<Plus size={16} className="text-[var(--primary)]" />}
+        icon={<Plus size={16} className="text-(--primary)" />}
         text='Tap "Add to Home Screen"'
       />
       <Step
@@ -300,15 +300,15 @@ function IPadChromeSteps() {
 function AndroidSteps() {
   return (
     <div className="space-y-3">
-      <p className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide">In Chrome</p>
+      <p className="text-xs font-semibold text-(--text-muted) uppercase tracking-wide">In Chrome</p>
       <Step
         num={1}
-        icon={<MoreVertical size={16} className="text-[var(--primary)]" />}
+        icon={<MoreVertical size={16} className="text-(--primary)" />}
         text="Tap the menu (three dots)"
       />
       <Step
         num={2}
-        icon={<Plus size={16} className="text-[var(--primary)]" />}
+        icon={<Plus size={16} className="text-(--primary)" />}
         text='Tap "Add to Home Screen"'
       />
       <Step
@@ -323,10 +323,10 @@ function AndroidSteps() {
 function DesktopSteps() {
   return (
     <div className="space-y-3">
-      <p className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide">In Chrome or Edge</p>
+      <p className="text-xs font-semibold text-(--text-muted) uppercase tracking-wide">In Chrome or Edge</p>
       <Step
         num={1}
-        icon={<Download size={16} className="text-[var(--primary)]" />}
+        icon={<Download size={16} className="text-(--primary)" />}
         text="Click the install icon in the address bar"
       />
       <Step

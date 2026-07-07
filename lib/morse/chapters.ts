@@ -2,6 +2,7 @@ import { GOOGLE_GUIDE_ORDER } from './guides/google';
 import { KOCH_ORDER } from './guides/koch';
 import { ALPHA_ORDER } from './guides/alphabetical';
 import { getAvailableWords, MIN_WORDS_FOR_LESSON } from './words';
+import { shuffle } from './engine';
 import type { Chapter, GuideType, LessonConfig } from '@/types';
 
 const ALL_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
@@ -106,15 +107,6 @@ function seededRandom(seed: number) {
   };
 }
 
-function seededShuffle<T>(arr: T[], rand: () => number): T[] {
-  const result = [...arr];
-  for (let i = result.length - 1; i > 0; i--) {
-    const j = Math.floor(rand() * (i + 1));
-    [result[i], result[j]] = [result[j], result[i]];
-  }
-  return result;
-}
-
 function dateSeed(dateStr: string): number {
   let hash = 0;
   for (let i = 0; i < dateStr.length; i++) {
@@ -135,7 +127,7 @@ export function getDailyReviewChapter(): Chapter {
 export function getDailyReviewLessons(dateStr?: string): LessonConfig[] {
   const today = dateStr || new Date().toLocaleDateString('sv-SE');
   const rand = seededRandom(dateSeed(today));
-  const shuffled = seededShuffle(ALL_LETTERS, rand);
+  const shuffled = shuffle(ALL_LETTERS, rand);
 
   // 3 lessons of ~8-9 letters each, all review-style
   const lessons: LessonConfig[] = [];

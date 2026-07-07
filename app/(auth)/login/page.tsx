@@ -12,11 +12,11 @@ export default function LoginPage() {
       <div className="w-full max-w-sm text-center">
         {/* Logo */}
         <div className="mb-8">
-          <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-[var(--primary)]">
+          <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-(--primary)">
             <span className="text-3xl font-bold text-white tracking-wider">·—</span>
           </div>
-          <h1 className="text-3xl font-bold text-[var(--text-primary)]">Dash Dot</h1>
-          <p className="mt-2 text-[var(--text-muted)]">
+          <h1 className="text-3xl font-bold text-(--text-primary)">Dash Dot</h1>
+          <p className="mt-2 text-(--text-muted)">
             Learn Morse Code. One letter at a time.
           </p>
         </div>
@@ -24,7 +24,7 @@ export default function LoginPage() {
         {/* Login Button */}
         <button
           onClick={handleLogin}
-          className="flex w-full items-center justify-center gap-3 rounded-xl bg-[var(--surface)] px-6 py-4 text-base font-medium text-[var(--text-primary)] shadow-sm ring-1 ring-[var(--border)] transition-all hover:shadow-md active:scale-[0.98]"
+          className="flex w-full items-center justify-center gap-3 rounded-xl bg-(--surface) px-6 py-4 text-base font-medium text-(--text-primary) shadow-sm ring-1 ring-(--border) transition-all hover:shadow-md active:scale-[0.98]"
         >
           <svg className="h-5 w-5" viewBox="0 0 24 24">
             <path
@@ -47,7 +47,7 @@ export default function LoginPage() {
           Continue with Google
         </button>
 
-        <p className="mt-6 text-sm text-[var(--text-muted)]">
+        <p className="mt-6 text-sm text-(--text-muted)">
           Free forever. No credit card.
         </p>
       </div>

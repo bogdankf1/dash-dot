@@ -82,7 +82,7 @@ export default function BottomNav() {
     : navItems.filter((item) => !AUTHED_ONLY_HREFS.has(item.href));
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-[var(--border)] bg-[var(--surface)]" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-(--border) bg-(--surface)" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
       <div className="mx-auto flex max-w-lg items-center justify-around">
         {visibleItems.map((item) => {
           const isActive = pathname.startsWith(item.href);
@@ -92,8 +92,8 @@ export default function BottomNav() {
               href={item.href}
               className={`flex flex-1 flex-col items-center gap-1 py-4 text-xs transition-colors ${
                 isActive
-                  ? 'text-[var(--primary)]'
-                  : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+                  ? 'text-(--primary)'
+                  : 'text-(--text-muted) hover:text-(--text-primary)'
               }`}
             >
               {item.icon(isActive)}

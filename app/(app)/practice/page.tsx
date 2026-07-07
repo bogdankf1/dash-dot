@@ -9,6 +9,8 @@ import { getUserAndProfile, getProgress, saveLessonProgress } from '@/lib/storag
 import type { LetterProgress } from '@/types';
 import ExerciseCard from '@/components/lesson/ExerciseCard';
 import ProgressBar from '@/components/lesson/ProgressBar';
+import GameOverScreen from '@/components/lesson/GameOverScreen';
+import CompletionScreen from '@/components/lesson/CompletionScreen';
 import type { MnemonicGuideType } from '@/lib/morse/mnemonics';
 
 type SymbolCategory = 'letters' | 'numbers' | 'punctuation';
@@ -360,111 +362,51 @@ export default function PracticePage() {
   // Game over screen
   if (isGameOver) {
     return (
-      <div className="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-[var(--background)] px-4">
-        <div className="w-full max-w-sm text-center">
-          <div className="mb-4 text-6xl">💔</div>
-          <h2 className="mb-2 text-2xl font-bold text-[var(--text-primary)]">
-            Out of Lives
-          </h2>
-          <p className="mb-8 text-[var(--text-muted)]">
-            Don&apos;t worry, practice makes perfect!
-          </p>
-          <div className="flex gap-3">
-            <button
-              onClick={() => {
-                setIsActive(false);
-                setIsGameOver(false);
-              }}
-              className="flex-1 cursor-pointer rounded-xl bg-[var(--surface)] px-6 py-3 font-medium text-[var(--text-primary)] ring-1 ring-[var(--border)] transition-colors active:scale-95"
-            >
-              Back
-            </button>
-            <button
-              onClick={() => startPractice()}
-              className="flex-1 cursor-pointer rounded-xl bg-[var(--primary)] px-6 py-3 font-medium text-white transition-colors active:scale-95"
-            >
-              Retry
-            </button>
-          </div>
-        </div>
-      </div>
+      <GameOverScreen
+        zClassName="z-[60]"
+        onBack={() => {
+          setIsActive(false);
+          setIsGameOver(false);
+        }}
+        onRetry={() => startPractice()}
+      />
     );
   }
 
   // Completion screen
   if (isComplete) {
-    const accuracy = totalAnswered > 0 ? correctCount / totalAnswered : 0;
     const practicedSymbols = Array.from(symbolResults.keys());
     return (
-      <div className="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-[var(--background)] px-4">
-        <div className="w-full max-w-sm text-center">
-          <div className="mb-4 text-6xl">🎉</div>
-          <h2 className="mb-2 text-2xl font-bold text-[var(--text-primary)]">
-            Practice Complete!
-          </h2>
-
-          <div className="mb-8 mt-6 grid grid-cols-3 gap-4">
-            <div className="rounded-xl bg-[var(--surface)] p-4 ring-1 ring-[var(--border)]">
-              <div className="text-2xl font-bold text-[var(--primary)]">
-                +{xpEarned}
-              </div>
-              <div className="text-xs text-[var(--text-muted)]">XP</div>
-            </div>
-            <div className="rounded-xl bg-[var(--surface)] p-4 ring-1 ring-[var(--border)]">
-              <div className="text-2xl font-bold text-[var(--success)]">
-                {Math.round(accuracy * 100)}%
-              </div>
-              <div className="text-xs text-[var(--text-muted)]">Accuracy</div>
-            </div>
-            <div className="rounded-xl bg-[var(--surface)] p-4 ring-1 ring-[var(--border)]">
-              <div className="text-2xl font-bold text-[var(--text-primary)]">
-                {correctCount}/{totalAnswered}
-              </div>
-              <div className="text-xs text-[var(--text-muted)]">Correct</div>
-            </div>
+      <CompletionScreen
+        zClassName="z-[60]"
+        title="Practice Complete!"
+        xpEarned={xpEarned}
+        correctCount={correctCount}
+        totalAnswered={totalAnswered}
+        streakInfo={streakInfo}
+        onContinue={() => router.push('/dashboard')}
+      >
+        {practicedSymbols.length > 0 && (
+          <div className="mb-6 text-sm text-(--text-muted)">
+            Symbols practiced:{' '}
+            <span className="font-medium text-(--text-primary)">
+              {practicedSymbols.join(', ')}
+            </span>
           </div>
-
-          {streakInfo?.continued && (
-            <div className="mb-6 rounded-xl bg-amber-50 p-4 ring-1 ring-amber-200">
-              <div className="text-3xl mb-1">🔥</div>
-              <p className="text-sm font-bold text-amber-700">
-                {streakInfo.newStreak}-day streak!
-              </p>
-              <p className="text-xs text-amber-600">
-                Keep it up — come back tomorrow!
-              </p>
-            </div>
-          )}
-
-          {practicedSymbols.length > 0 && (
-            <div className="mb-6 text-sm text-[var(--text-muted)]">
-              Symbols practiced:{' '}
-              <span className="font-medium text-[var(--text-primary)]">
-                {practicedSymbols.join(', ')}
-              </span>
-            </div>
-          )}
-
-          <button
-            onClick={() => router.push('/dashboard')}
-            className="w-full cursor-pointer rounded-xl bg-[var(--primary)] px-6 py-4 font-medium text-white transition-colors hover:bg-[var(--primary-hover)] active:scale-95"
-          >
-            Continue
-          </button>
-        </div>
-      </div>
+        )}
+      </CompletionScreen>
     );
   }
 
   // Active practice session — same layout as lessons
   return (
-    <div className="fixed inset-0 z-[60] flex flex-col overflow-hidden bg-[var(--background)]">
+    <div className="fixed inset-0 z-[60] flex flex-col overflow-hidden bg-(--background)">
       <div className="flex-shrink-0 px-4 pt-4">
         <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={() => setShowExitModal(true)}
-            className="flex h-8 w-8 flex-shrink-0 cursor-pointer items-center justify-center rounded-lg text-[var(--text-muted)] transition-colors hover:bg-[var(--surface)] hover:text-[var(--text-primary)] active:scale-90"
+            className="flex h-8 w-8 flex-shrink-0 cursor-pointer items-center justify-center rounded-lg text-(--text-muted) transition-colors hover:bg-(--surface) hover:text-(--text-primary) active:scale-90"
             title="Exit practice"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -497,16 +439,16 @@ export default function PracticePage() {
 
       {showExitModal && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 px-4">
-          <div className="w-full max-w-sm rounded-2xl bg-[var(--background)] p-6 shadow-xl">
-            <h3 className="mb-2 text-lg font-bold text-[var(--text-primary)]">Quit Practice?</h3>
-            <p className="mb-6 text-sm text-[var(--text-muted)]">
+          <div className="w-full max-w-sm rounded-2xl bg-(--background) p-6 shadow-xl">
+            <h3 className="mb-2 text-lg font-bold text-(--text-primary)">Quit Practice?</h3>
+            <p className="mb-6 text-sm text-(--text-muted)">
               Your progress in this session won&apos;t be saved and no XP will be earned.
             </p>
             <div className="flex gap-3">
               <button
                 type="button"
                 onClick={() => setShowExitModal(false)}
-                className="flex-1 cursor-pointer rounded-xl bg-[var(--primary)] px-4 py-3 text-sm font-medium text-white transition-colors active:scale-95"
+                className="flex-1 cursor-pointer rounded-xl bg-(--primary) px-4 py-3 text-sm font-medium text-white transition-colors active:scale-95"
               >
                 Keep Going
               </button>
@@ -516,7 +458,7 @@ export default function PracticePage() {
                   setIsActive(false);
                   setShowExitModal(false);
                 }}
-                className="flex-1 cursor-pointer rounded-xl bg-[var(--surface)] px-4 py-3 text-sm font-medium text-[var(--error)] ring-1 ring-[var(--border)] transition-colors active:scale-95"
+                className="flex-1 cursor-pointer rounded-xl bg-(--surface) px-4 py-3 text-sm font-medium text-(--error) ring-1 ring-(--border) transition-colors active:scale-95"
               >
                 Quit
               </button>
