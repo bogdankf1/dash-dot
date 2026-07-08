@@ -33,16 +33,12 @@ const localStorageStub = {
 
 beforeEach(() => {
   storage.clear();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (globalThis as any).window = globalThis;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (globalThis as any).localStorage = localStorageStub;
 });
 
 afterEach(() => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   delete (globalThis as any).window;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   delete (globalThis as any).localStorage;
   vi.useRealTimers();
 });
