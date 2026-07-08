@@ -3,10 +3,11 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { generateLesson, generateWordLesson, generateDailyReviewLesson, calculateXP, updateMastery } from '@/lib/morse/engine';
+import { generateLesson, generateWordLesson, generateDailyReviewLesson, calculateXP } from '@/lib/morse/engine';
 import type { Exercise } from '@/lib/morse/engine';
 import { getChapters, getLessonsForChapter, getDailyReviewLessons } from '@/lib/morse/chapters';
-import { getUserAndProfile, getProgress, saveLessonProgress } from '@/lib/storage/dataLayer';
+import { getUserAndProfile, getProgress } from '@/lib/storage/dataLayer';
+import { useExerciseRunner, persistExerciseResults } from '@/lib/hooks/useExerciseRunner';
 import type { GuideType, LetterProgress } from '@/types';
 import ExerciseCard from '@/components/lesson/ExerciseCard';
 import ProgressBar from '@/components/lesson/ProgressBar';
@@ -14,31 +15,14 @@ import GameOverScreen from '@/components/lesson/GameOverScreen';
 import CompletionScreen from '@/components/lesson/CompletionScreen';
 import type { MnemonicGuideType } from '@/lib/morse/mnemonics';
 
-interface SymbolResult {
-  symbol: string;
-  correct: number;
-  attempts: number;
-  masteryLevel: number;
-}
-
 export default function LessonPage() {
   const params = useParams();
   const router = useRouter();
   const lessonId = params.lessonId as string;
 
-  const [exercises, setExercises] = useState<Exercise[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [lives, setLives] = useState(3);
-  const [correctCount, setCorrectCount] = useState(0);
-  const [totalAnswered, setTotalAnswered] = useState(0);
-  const [isComplete, setIsComplete] = useState(false);
-  const [isGameOver, setIsGameOver] = useState(false);
-  const [xpEarned, setXpEarned] = useState(0);
-  const [streakInfo, setStreakInfo] = useState<{ continued: boolean; newStreak: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [skipAudio, setSkipAudio] = useState(false);
-  const [showExitModal, setShowExitModal] = useState(false);
   const [mnemonicGuide, setMnemonicGuide] = useState<MnemonicGuideType>('dashdot');
   const [showAudioTip, setShowAudioTip] = useState(false);
   const [lessonMeta, setLessonMeta] = useState<{
@@ -53,10 +37,38 @@ export default function LessonPage() {
   // back to 1 by updateMastery's "0 → 1" promotion branch.
   const [initialMastery, setInitialMastery] = useState<Map<string, number>>(new Map());
 
-  // Track per-symbol results
-  const [symbolResults, setSymbolResults] = useState<Map<string, SymbolResult>>(
-    new Map()
+  // A word exercise fans out to each unique letter; other exercises track their
+  // single symbol.
+  const getSymbols = useCallback(
+    (exercise: Exercise) =>
+      exercise.word
+        ? Array.from(new Set(exercise.word.toUpperCase().split('')))
+        : [exercise.symbol],
+    []
   );
+  const getSeedMastery = useCallback(
+    (sym: string) => initialMastery.get(sym) ?? 0,
+    [initialMastery]
+  );
+
+  const {
+    exercises,
+    currentIndex,
+    lives,
+    correctCount,
+    totalAnswered,
+    isComplete,
+    isGameOver,
+    xpEarned,
+    streakInfo,
+    showExitModal,
+    symbolResults,
+    handleAnswer,
+    setExercises,
+    setShowExitModal,
+    setXpEarned,
+    setStreakInfo,
+  } = useExerciseRunner({ getSymbols, getSeedMastery });
 
   const loadLesson = useCallback(async () => {
     setError(false);
@@ -168,59 +180,6 @@ export default function LessonPage() {
     loadLesson();
   }, [loadLesson]);
 
-  const handleAnswer = useCallback(
-    (correct: boolean) => {
-      const exercise = exercises[currentIndex];
-      setTotalAnswered((prev) => prev + 1);
-
-      if (correct) {
-        setCorrectCount((prev) => prev + 1);
-      } else {
-        setLives((prev) => {
-          const newLives = prev - 1;
-          if (newLives <= 0) {
-            setIsGameOver(true);
-          }
-          return newLives;
-        });
-      }
-
-      // Track symbol result — for word exercises, fan out to each letter
-      setSymbolResults((prev) => {
-        const updated = new Map(prev);
-        const symbols = exercise.word
-          ? Array.from(new Set(exercise.word.toUpperCase().split('')))
-          : [exercise.symbol];
-
-        for (const sym of symbols) {
-          const existing = updated.get(sym) || {
-            symbol: sym,
-            correct: 0,
-            attempts: 0,
-            masteryLevel: initialMastery.get(sym) ?? 0,
-          };
-          existing.attempts += 1;
-          if (correct) existing.correct += 1;
-          existing.masteryLevel = updateMastery(
-            existing.masteryLevel as 0 | 1 | 2 | 3,
-            existing.correct,
-            existing.attempts
-          );
-          updated.set(sym, existing);
-        }
-        return updated;
-      });
-
-      // Move to next exercise
-      if (currentIndex + 1 >= exercises.length) {
-        setIsComplete(true);
-      } else {
-        setCurrentIndex((prev) => prev + 1);
-      }
-    },
-    [currentIndex, exercises, initialMastery]
-  );
-
   // Auto-skip audio exercises when skipAudio is enabled
   useEffect(() => {
     if (!skipAudio || exercises.length === 0 || isComplete || isGameOver) return;
@@ -236,44 +195,26 @@ export default function LessonPage() {
 
     const meta = lessonMeta;
     let cancelled = false;
-    async function saveResults() {
-      const { profile } = await getUserAndProfile(new Date().getTimezoneOffset());
-      if (cancelled) return;
-
-      const streak = profile?.streak || 0;
-      const lastActivity = profile?.last_activity_date;
-      const accuracy = totalAnswered > 0 ? correctCount / totalAnswered : 0;
-      const xp = calculateXP(correctCount, totalAnswered, streak);
-      if (!cancelled) setXpEarned(xp);
-
-      // Check if streak will be continued (new day, last activity was yesterday)
-      const today = new Date();
-      const localDateStr = today.toLocaleDateString('sv-SE');
-      if (!cancelled && lastActivity && lastActivity !== localDateStr) {
-        const yesterday = new Date(today);
-        yesterday.setDate(yesterday.getDate() - 1);
-        const yesterdayStr = yesterday.toLocaleDateString('sv-SE');
-        if (lastActivity === yesterdayStr) {
-          setStreakInfo({ continued: true, newStreak: streak + 1 });
-        }
-      }
-
-      try {
-        await saveLessonProgress({
-          chapterId: meta.chapterId,
-          lessonId,
-          xpEarned: xp,
-          accuracy,
-          symbolResults: Array.from(symbolResults.values()),
-          timezoneOffset: new Date().getTimezoneOffset(),
-        });
-      } catch (err) {
+    persistExerciseResults({
+      correctCount,
+      totalAnswered,
+      computeXP: calculateXP,
+      buildPayload: ({ xp, accuracy }) => ({
+        chapterId: meta.chapterId,
+        lessonId,
+        xpEarned: xp,
+        accuracy,
+        symbolResults: Array.from(symbolResults.values()),
+        timezoneOffset: new Date().getTimezoneOffset(),
+      }),
+      onError: (err) => {
         console.error('Failed to save lesson progress:', err);
         toast.error('Failed to save lesson progress');
-      }
-    }
-
-    saveResults();
+      },
+      setXpEarned,
+      setStreakInfo,
+      isCancelled: () => cancelled,
+    });
     return () => { cancelled = true; };
   }, [isComplete, lessonMeta, correctCount, totalAnswered, lessonId, symbolResults]);
 

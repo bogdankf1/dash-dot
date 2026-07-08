@@ -3,9 +3,10 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { generatePracticeSession, calculatePracticeXP, updateMastery } from '@/lib/morse/engine';
+import { generatePracticeSession, calculatePracticeXP } from '@/lib/morse/engine';
 import type { Exercise } from '@/lib/morse/engine';
-import { getUserAndProfile, getProgress, saveLessonProgress } from '@/lib/storage/dataLayer';
+import { getProgress } from '@/lib/storage/dataLayer';
+import { useExerciseRunner, persistExerciseResults } from '@/lib/hooks/useExerciseRunner';
 import type { LetterProgress } from '@/types';
 import ExerciseCard from '@/components/lesson/ExerciseCard';
 import ProgressBar from '@/components/lesson/ProgressBar';
@@ -15,13 +16,6 @@ import type { MnemonicGuideType } from '@/lib/morse/mnemonics';
 
 type SymbolCategory = 'letters' | 'numbers' | 'punctuation';
 
-interface SymbolResult {
-  symbol: string;
-  correct: number;
-  attempts: number;
-  masteryLevel: number;
-}
-
 export default function PracticePage() {
   const router = useRouter();
   const [letterProgress, setLetterProgress] = useState<LetterProgress[]>([]);
@@ -30,20 +24,35 @@ export default function PracticePage() {
   const [category, setCategory] = useState<SymbolCategory>('letters');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-
-  // Lesson-like session state
-  const [exercises, setExercises] = useState<Exercise[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [lives, setLives] = useState(3);
-  const [correctCount, setCorrectCount] = useState(0);
-  const [totalAnswered, setTotalAnswered] = useState(0);
-  const [isComplete, setIsComplete] = useState(false);
-  const [isGameOver, setIsGameOver] = useState(false);
-  const [xpEarned, setXpEarned] = useState(0);
-  const [streakInfo, setStreakInfo] = useState<{ continued: boolean; newStreak: number } | null>(null);
-  const [showExitModal, setShowExitModal] = useState(false);
   const [mnemonicGuide, setMnemonicGuide] = useState<MnemonicGuideType>('dashdot');
-  const [symbolResults, setSymbolResults] = useState<Map<string, SymbolResult>>(new Map());
+
+  // Lesson-like session state, shared with the lesson page. Practice records
+  // each exercise's single symbol and seeds mastery from the current progress.
+  const getSymbols = useCallback((exercise: Exercise) => [exercise.symbol], []);
+  const getSeedMastery = useCallback(
+    (sym: string) => letterProgress.find((lp) => lp.symbol === sym)?.mastery_level ?? 0,
+    [letterProgress]
+  );
+
+  const {
+    exercises,
+    currentIndex,
+    lives,
+    correctCount,
+    totalAnswered,
+    isComplete,
+    isGameOver,
+    xpEarned,
+    streakInfo,
+    showExitModal,
+    symbolResults,
+    handleAnswer,
+    reset,
+    setShowExitModal,
+    setIsGameOver,
+    setXpEarned,
+    setStreakInfo,
+  } = useExerciseRunner({ getSymbols, getSeedMastery });
 
   const loadProgress = async () => {
     setError(false);
@@ -88,16 +97,7 @@ export default function PracticePage() {
     if (symbols.length < 2) return;
 
     const generatedExercises = generatePracticeSession(symbols, letterProgress);
-    setExercises(generatedExercises);
-    setCurrentIndex(0);
-    setLives(3);
-    setCorrectCount(0);
-    setTotalAnswered(0);
-    setIsComplete(false);
-    setIsGameOver(false);
-    setXpEarned(0);
-    setStreakInfo(null);
-    setSymbolResults(new Map());
+    reset(generatedExercises);
     setIsActive(true);
 
     // Load mnemonic guide preference
@@ -112,100 +112,31 @@ export default function PracticePage() {
     } catch {}
   };
 
-  const handleAnswer = useCallback(
-    (correct: boolean) => {
-      const exercise = exercises[currentIndex];
-      setTotalAnswered((prev) => prev + 1);
-
-      if (correct) {
-        setCorrectCount((prev) => prev + 1);
-      } else {
-        setLives((prev) => {
-          const newLives = prev - 1;
-          if (newLives <= 0) {
-            setIsGameOver(true);
-          }
-          return newLives;
-        });
-      }
-
-      // Track symbol result
-      setSymbolResults((prev) => {
-        const updated = new Map(prev);
-        const sym = exercise.symbol;
-        const existing = updated.get(sym) || {
-          symbol: sym,
-          correct: 0,
-          attempts: 0,
-          // Seed from current DB mastery so a strong-existing symbol isn't
-          // demoted by the "0 → 1" promotion in updateMastery.
-          masteryLevel:
-            letterProgress.find((lp) => lp.symbol === sym)?.mastery_level ?? 0,
-        };
-        existing.attempts += 1;
-        if (correct) existing.correct += 1;
-        existing.masteryLevel = updateMastery(
-          existing.masteryLevel as 0 | 1 | 2 | 3,
-          existing.correct,
-          existing.attempts
-        );
-        updated.set(sym, existing);
-        return updated;
-      });
-
-      // Move to next exercise
-      if (currentIndex + 1 >= exercises.length) {
-        setIsComplete(true);
-      } else {
-        setCurrentIndex((prev) => prev + 1);
-      }
-    },
-    [currentIndex, exercises, letterProgress]
-  );
-
   // Save results when practice completes
   useEffect(() => {
     if (!isComplete) return;
 
     let cancelled = false;
-    async function saveResults() {
-      const { profile } = await getUserAndProfile(new Date().getTimezoneOffset());
-      if (cancelled) return;
-
-      const streak = profile?.streak || 0;
-      const lastActivity = profile?.last_activity_date;
-      const accuracy = totalAnswered > 0 ? correctCount / totalAnswered : 0;
-      const xp = calculatePracticeXP(correctCount, totalAnswered, streak);
-      if (!cancelled) setXpEarned(xp);
-
-      // Check if streak will be continued
-      const today = new Date();
-      const localDateStr = today.toLocaleDateString('sv-SE');
-      if (!cancelled && lastActivity && lastActivity !== localDateStr) {
-        const yesterday = new Date(today);
-        yesterday.setDate(yesterday.getDate() - 1);
-        const yesterdayStr = yesterday.toLocaleDateString('sv-SE');
-        if (lastActivity === yesterdayStr) {
-          setStreakInfo({ continued: true, newStreak: streak + 1 });
-        }
-      }
-
-      try {
-        await saveLessonProgress({
-          chapterId: 'practice',
-          lessonId: `practice-${Date.now()}`,
-          xpEarned: xp,
-          accuracy,
-          symbolResults: Array.from(symbolResults.values()),
-          timezoneOffset: new Date().getTimezoneOffset(),
-        });
-      } catch (err) {
+    persistExerciseResults({
+      correctCount,
+      totalAnswered,
+      computeXP: calculatePracticeXP,
+      buildPayload: ({ xp, accuracy }) => ({
+        chapterId: 'practice',
+        lessonId: `practice-${Date.now()}`,
+        xpEarned: xp,
+        accuracy,
+        symbolResults: Array.from(symbolResults.values()),
+        timezoneOffset: new Date().getTimezoneOffset(),
+      }),
+      onError: (err) => {
         console.error('Failed to save practice progress:', err);
         toast.error('Failed to save practice progress');
-      }
-    }
-
-    saveResults();
+      },
+      setXpEarned,
+      setStreakInfo,
+      isCancelled: () => cancelled,
+    });
     return () => { cancelled = true; };
   }, [isComplete, correctCount, totalAnswered, symbolResults]);
 
